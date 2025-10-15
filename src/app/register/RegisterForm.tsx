@@ -151,6 +151,7 @@ export default function RegisterForm() {
             <div>
               <label className="block text-sm font-medium mb-1">
                 Confirmar contraseña
+                
               </label>
               <input
                 type="password"
