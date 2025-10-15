@@ -21,12 +21,12 @@ export default function Home() {
             {/* botones de sesion y register */}
             <div className="flex items-center space-x-4">
               <Link 
-                href="/login" 
+                href="/login " 
                 className="text-gray-700 hover:text-blue-600 font-medium">
                 Iniciar Sesión
               </Link>
               <Link 
-                href="/register"
+                href=""
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
                 Regístrate
               </Link>
@@ -35,14 +35,19 @@ export default function Home() {
         </div>
 </header>
 
-      <section className="relative min-h-[100vh] flex items-center pt-20">
+      <section className="relative min-h-screen flex items-center">
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat mt-16"
-          style={{ backgroundImage: "url('/fondoLandingPageM.png')" }}>
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ 
+            backgroundImage: "url('/fondoLandingPageM.png')",
+            top: "64px" // altura del navbar
+          }}>
+          {/* Overlay oscuro para mejorar legibilidad */}
+          <div className="absolute inset-0 bg-black/50"></div>
         </div>
   
         {/* texto a la izquierda*/}
-        <div className="container mx-auto px-10 relative z-10">
+        <div className="container mx-auto px-10 relative z-10 mt-16">
           <div className="max-w-2xl text-left">
             <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
               El conocimiento es el pasaporte a tu futuro
@@ -232,3 +237,5 @@ export default function Home() {
     </div>
   );
 }
+
+
