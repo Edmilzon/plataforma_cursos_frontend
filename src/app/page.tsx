@@ -27,6 +27,7 @@ export default function Home() {
               </Link>
               <Link 
                 href="/register"
+                style={{ backgroundColor: '#59EA8A' }}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
                 Regístrate
               </Link>
@@ -52,6 +53,7 @@ export default function Home() {
             </p>
             <Link 
               href="/login"
+              style={{ backgroundColor: '#A9201D' }}
               className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
               Empieza a aprender
             </Link>
