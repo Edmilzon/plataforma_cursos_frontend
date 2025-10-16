@@ -2,10 +2,12 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
+export interface User {
+  id_usuario: number;
+  nombre: string;
+  apellido: string;
+  correo: string;
+  rol: 'Docente' | 'Estudiante' | 'Administrador';
 }
 
 interface AuthContextType {

@@ -1,17 +1,22 @@
 "use client";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function RegisterForm() {
+  const { register, loading, error } = useAuth();
+  const router = useRouter();
+
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    age: "",
-    email: "",
+    nombre: "",
+    apellido: "",
+    correo: "",
     password: "",
     confirmPassword: "",
+    edad: "",
   });
-
-  const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -19,123 +24,104 @@ export default function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
 
     if (form.password !== form.confirmPassword) {
-      alert("Las contraseñas no coinciden");
+      setFormError("Las contraseñas no coinciden");
       return;
     }
 
-    setLoading(true);
-    try {
-      const res = await fetch("http://localhost:4000/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: form.firstName,
-          lastName: form.lastName,
-          age: form.age,
-          email: form.email,
-          password: form.password,
-        }),
-      });
+    const result = await register({
+      nombre: form.nombre,
+      apellido: form.apellido,
+      correo: form.correo,
+      password: form.password,
+      edad: parseInt(form.edad, 10),
+    });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Error en el registro");
-
-      alert("Usuario registrado con éxito");
-      setForm({
-        firstName: "",
-        lastName: "",
-        age: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-      });
-    } catch (error: any) {
-      console.error(error);
-      alert(error.message || "No se pudo conectar con el servidor");
-    } finally {
-      setLoading(false);
+    if (result.success) {
+      // El hook `useAuth` ahora maneja el login.
+      // Simplemente redirigimos al dashboard o a la página principal.
+      router.push("/"); // O a '/dashboard' si tienes uno
+    } else {
+      setFormError(result.error?.message || "No se pudo completar el registro.");
     }
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
-      {/* Sección de imagen (1/3 izquierda) */}
+    <div className="min-h-screen flex bg-slate-50">
       <div className="hidden md:flex md:w-1/3 bg-blue-700 items-center justify-center">
         <img
           src="/imagenRegister.svg"
           alt="Registro"
-          className="w-full h-full+200 object-contain"
+          className="w-full h-full object-contain p-8"
         />
       </div>
 
-      {/* Sección del formulario (2/3 derecha) */}
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md">
+        <div className="bg-white shadow-lg rounded-2xl p-10 w-full max-w-lg">
           <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">
-            Registrarse
+            Crea tu cuenta
           </h1>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium mb-1 text-gray-700">
                   Nombres
                 </label>
                 <input
                   type="text"
-                  name="firstName"
-                  value={form.firstName}
+                  name="nombre"
+                  value={form.nombre}
                   onChange={handleChange}
-                  className="w-full p-2 border rounded-md"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium mb-1 text-gray-700">
                   Apellidos
                 </label>
                 <input
                   type="text"
-                  name="lastName"
-                  value={form.lastName}
+                  name="apellido"
+                  value={form.apellido}
                   onChange={handleChange}
-                  className="w-full p-2 border rounded-md"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Edad</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Edad</label>
               <input
                 type="number"
-                name="age"
-                min="0"
-                value={form.age}
+                name="edad"
+                value={form.edad}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1 text-gray-700">
                 Correo electrónico
               </label>
               <input
                 type="email"
-                name="email"
-                value={form.email}
+                name="correo"
+                value={form.correo}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1 text-gray-700">
                 Contraseña
               </label>
               <input
@@ -143,13 +129,13 @@ export default function RegisterForm() {
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1 text-gray-700">
                 Confirmar contraseña
                 
               </label>
@@ -158,27 +144,32 @@ export default function RegisterForm() {
                 name="confirmPassword"
                 value={form.confirmPassword}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 required
               />
             </div>
 
+            {formError && (
+              <p className="text-red-500 text-sm text-center">{formError}</p>
+            )}
+            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+
             <button
               type="submit"
               disabled={loading}
-              className={`w-full ${
+              className={`w-full font-semibold ${
                 loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-              } text-white py-2 rounded-md transition`}
+              } text-white py-3 rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
             >
               {loading ? "Registrando..." : "Registrarse"}
             </button>
           </form>
 
-          <p className="text-sm text-center mt-4">
+          <p className="text-sm text-center mt-6 w-full">
             ¿Ya tienes cuenta?{" "}
-            <a href="/login" className="text-blue-600 hover:underline">
+            <Link href="/login" className="text-blue-600 hover:underline">
               Inicia sesión
-            </a>
+            </Link>
           </p>
         </div>
       </div>

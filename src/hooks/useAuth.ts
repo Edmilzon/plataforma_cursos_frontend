@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useAuth as useAuthContext } from '@/context/AuthContext';
+import { useAuth as useAuthContext, User } from '@/context/AuthContext';
+import { userService, ApiUser } from '@/services/userService';
 import { authService } from '@/services/authService';
 
 export const useAuth = () => {
@@ -14,45 +15,49 @@ export const useAuth = () => {
     try {
       const data = await authService.login(email, password);
       
-      // Guardar el token JWT que responde el backend
       localStorage.setItem('token', data.token);
       
-      // Como el backend no envía datos del usuario en el login,
-      // podemos hacer una petición adicional o usar los datos básicos
-      const userData = {
-        id: data.userId || 0, // Si el backend no envía userId, ajusta esto
-        name: '', // Podrías necesitar otro endpoint para obtener el perfil
-        email: email,
-        lastname: '', // Ajustar según la respuesta real
-        phone: '' // Ajustar según la respuesta real
-      };
+      const apiUser: ApiUser = await userService.getProfile(data.id_usuario);
       
+      const userData: User = {
+        id_usuario: apiUser.id_usuario,
+        nombre: apiUser.nombre,
+        apellido: apiUser.apellido,
+        correo: apiUser.correo,
+        rol: apiUser.rol,
+      };
+
       login(userData);
       return { success: true, token: data.token };
     } catch (err: any) {
-      setError(err.message);
-      return { success: false, error: err.message };
+      const errorMessage = err.message || 'Ocurrió un error inesperado.';
+      setError(errorMessage);
+      return { success: false, error: err };
     } finally {
       setLoading(false);
     }
   };
 
   const handleRegister = async (userData: {
-    email: string;
+    nombre: string;
+    apellido: string;
+    correo: string;
     password: string;
-    name: string;
-    lastname: string;
-    phone: string;
+    edad: number;
   }) => {
     setLoading(true);
     setError(null);
     
     try {
       const data = await authService.register(userData);
-      return { success: true, data };
+      if (data) {
+        await handleLogin(userData.correo, userData.password);
+      }
+      return { success: true, data: data };
     } catch (err: any) {
-      setError(err.message);
-      return { success: false, error: err.message };
+      const errorMessage = err.message || 'Ocurrió un error inesperado.';
+      setError(errorMessage);
+      return { success: false, error: err };
     } finally {
       setLoading(false);
     }

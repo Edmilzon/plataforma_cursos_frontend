@@ -24,7 +24,6 @@ export const authService = {
     correo: string;
     password: string;
     edad: number;
-    avatar_url?: string;
     rol?: string;
   }) {
     const response = await fetch(`${API_BASE_URL}/user/register`, {
