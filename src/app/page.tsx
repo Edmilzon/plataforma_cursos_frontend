@@ -1,8 +1,10 @@
+'use client';
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { TeacherCard, Teacher } from "@/components/landing/TeacherCard";
-import { CourseCard, Course } from "@/components/landing/CourseCard";
-import { courseService } from "@/services/courseService";
 import { userService, ApiUser } from "@/services/userService";
+import { Navbar } from "@/components/navbar";
 
 const teacherStyles = [
   { gradient: 'bg-gradient-to-br from-blue-500 to-purple-600', textColor: 'text-blue-600', marginLeft: '' },
@@ -23,20 +25,24 @@ const mapApiUsersToTeachers = (apiUsers: ApiUser[]): Teacher[] => {
   });
 };
 
-export default async function Home() {
-  let courses: Course[] = [];
-  let teachers: Teacher[] = [];
+export default function Home() {
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
 
-  try {
-    courses = await courseService.getAllCourses();
-    const teacherUsers = await userService.getUsersByRole('Docente');
-    teachers = mapApiUsersToTeachers(teacherUsers);
-  } catch (error) {
-    console.error("Error al obtener datos para la página de inicio:", error);
-  }
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const teacherUsers = await userService.getUsersByRole('Docente');
+        setTeachers(mapApiUsersToTeachers(teacherUsers));
+      } catch (error) {
+        console.error("Error al obtener los docentes:", error);
+      }
+    };
+    fetchTeachers();
+  }, []);
 
   return (
     <>
+      <Navbar />
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center -mt-16"> {/* mt-16 para compensar el padding del layout */}
         <div 
@@ -87,20 +93,6 @@ export default async function Home() {
                 </p>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Courses Section */}
-      <section className="bg-gray-50 py-20">
-        <div className="container mx-auto px-4 " >
-          <h3 className="text-3xl font-bold text-gray-900 text-center mb-12">
-            Nuevos cursos
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {courses.length > 0 ? courses.map((course, index) => (
-              <CourseCard key={index} course={course} />
-            )) : <p className="col-span-3 text-center text-gray-500">No hay cursos disponibles en este momento.</p>}
           </div>
         </div>
       </section>
