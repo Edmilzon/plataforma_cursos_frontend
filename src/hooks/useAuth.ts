@@ -13,18 +13,16 @@ export const useAuth = () => {
     setError(null);
     
     try {
-      const data = await authService.login(email, password);
+      const data = await authService.login(email, password); // Asegúrate que authService.login envíe { correo: email }
       
       localStorage.setItem('token', data.token);
       
-      const apiUser: ApiUser = await userService.getProfile(data.id_usuario);
-      
       const userData: User = {
-        id_usuario: apiUser.id_usuario,
-        nombre: apiUser.nombre,
-        apellido: apiUser.apellido,
-        correo: apiUser.correo,
-        rol: apiUser.rol,
+        id_usuario: data.user.id_usuario,
+        nombre: data.user.nombre,
+        apellido: data.user.apellido,
+        correo: data.user.correo,
+        rol: data.user.rol,
       };
 
       login(userData);
@@ -51,9 +49,16 @@ export const useAuth = () => {
     try {
       const data = await authService.register(userData);
       if (data) {
-        await handleLogin(userData.correo, userData.password);
+        const newUser: User = {
+          nombre: data.user.nombre,
+          apellido: data.user.apellido,
+          correo: data.user.correo,
+          rol: data.user.rol,
+        };
+        localStorage.setItem('token', data.token);
+        login(newUser);
       }
-      return { success: true, data: data };
+      return { success: true, data: data, isRedirecting: true };
     } catch (err: any) {
       const errorMessage = err.message || 'Ocurrió un error inesperado.';
       setError(errorMessage);

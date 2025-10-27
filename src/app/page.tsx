@@ -41,48 +41,10 @@ export default function Home() {
   }, []);
 
   return (
-<<<<<<< HEAD
     <>
       <Navbar />
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center -mt-16"> {/* mt-16 para compensar el padding del layout */}
-=======
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* la parte del navar*/}
-      <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo + Navegación JUNTOS a la IZQUIERDA */}
-            <div className="flex items-center space-x-8">
-              <div className="flex items-center space-x-2">
-                <h1 className="text-2xl font-bold text-gray-900">Polimathia</h1>
-              </div>
-              <nav className="hidden md:flex items-center space-x-8">
-                <span className="text-gray-700 font-medium">Aprende</span>
-                <span className="text-gray-700 font-medium">Certifícate</span>
-              </nav>
-            </div>
-
-            {/* botones de sesion y register */}
-            <div className="flex items-center space-x-4">
-              <Link 
-                href="/login" 
-                className="text-gray-700 hover:text-blue-600 font-medium">
-                Iniciar Sesión
-              </Link>
-              <Link 
-                href="/register"
-                style={{ backgroundColor: '#59EA8A' }}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
-                Regístrate
-              </Link>
-            </div>
-          </div>
-        </div>
-</header>
-
-      <section className="relative min-h-[100vh] flex items-center pt-20">
->>>>>>> feature/landing-page
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ 
@@ -93,7 +55,7 @@ export default function Home() {
   
         <div className="container mx-auto px-10 relative z-10 mt-16">
           <div className="max-w-2xl text-left">
-            <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+            <h2 className="text-5xl md:text-6x  l font-bold text-white mb-6 leading-tight">
               El conocimiento es el pasaporte a tu futuro
             </h2>
             <p className="text-xl text-white mb-8">
@@ -116,7 +78,7 @@ export default function Home() {
             <div className="flex-1 w-full">
               <div className="flex flex-col space-y-8">
                 {teachers.length > 0 ? (
-                  teachers.map((teacher, index) => <TeacherCard key={index} teacher={teacher} />)
+                  teachers.map((teacher, index) => <TeacherCard key={`${teacher.name}-${index}`} teacher={teacher} />)
                 ) : (
                   <p className="text-gray-500">Nuestros docentes se están preparando. ¡Vuelve pronto!</p>
                 )}

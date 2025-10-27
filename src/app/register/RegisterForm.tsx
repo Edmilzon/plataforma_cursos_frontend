@@ -17,6 +17,7 @@ export default function RegisterForm() {
     edad: "",
   });
   const [formError, setFormError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -25,6 +26,7 @@ export default function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    setSuccessMessage(null);
 
     if (form.password !== form.confirmPassword) {
       setFormError("Las contraseñas no coinciden");
@@ -40,9 +42,10 @@ export default function RegisterForm() {
     });
 
     if (result.success) {
-      // El hook `useAuth` ahora maneja el login.
-      // Simplemente redirigimos al dashboard o a la página principal.
-      router.push("/"); // O a '/dashboard' si tienes uno
+      setSuccessMessage("¡Usuario creado exitosamente! Redirigiendo a login...");
+      setTimeout(() => {
+        router.push("/login");
+      }, 2000);
     } else {
       setFormError(result.error?.message || "No se pudo completar el registro.");
     }
@@ -149,19 +152,17 @@ export default function RegisterForm() {
               />
             </div>
 
-            {formError && (
-              <p className="text-red-500 text-sm text-center">{formError}</p>
-            )}
-            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !!successMessage}
               className={`w-full font-semibold ${
-                loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+                loading || successMessage
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
               } text-white py-3 rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+            
             >
-              {loading ? "Registrando..." : "Registrarse"}
+              Registrar
             </button>
           </form>
 
