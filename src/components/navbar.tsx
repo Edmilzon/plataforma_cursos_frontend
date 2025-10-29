@@ -20,8 +20,11 @@ export function Navbar() {
               <h1 className="text-2xl font-bold text-gray-900">Polimathia</h1>
             </Link>
             <nav className="hidden md:flex items-center space-x-8">
-              <span className="text-gray-700 font-medium">Aprende</span>
-              <span className="text-gray-700 font-medium">Certifícate</span>
+              <Link href="/about" className="text-gray-700 hover:text-blue-600 font-medium">
+                Sobre nosotros
+              </Link>
+              <Link href="/learn" className="text-gray-700 hover:text-blue-600 font-medium">Aprende</Link>
+              <Link href="/certificates" className="text-gray-700 hover:text-blue-600 font-medium">Certifícate</Link>
             </nav>
           </div>
 
