@@ -12,7 +12,7 @@ import {
 type RankingType = 'students' | 'course_rating' | 'course_popularity';
 
 // --- Íconos SVG para una UI más rica ---
-const MedalIcon = ({ rank }: { rank: number }) => {
+const MedalIcon = ({ rank, className = '' }: { rank: number; className?: string }) => {
   const colors = {
     1: 'text-yellow-400',
     2: 'text-gray-400',
