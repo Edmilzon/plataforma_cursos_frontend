@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 'use client';
 
 import { BottomNavbar } from '@/components/BottomNavbar';
@@ -19,9 +18,7 @@ export default function CertificatesPage() {
             <BottomNavbar />
         </>
     );
-}
-=======
-export default function CertificatesPage() {
+}export default function CertificatesPage() {
   return (
     <main className="min-h-screen bg-gray-50 py-16 px-6">
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-10">
@@ -42,4 +39,3 @@ export default function CertificatesPage() {
     </main>
   );
 }
->>>>>>> origin/teacherModal
