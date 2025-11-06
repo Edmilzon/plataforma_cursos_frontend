@@ -10,8 +10,6 @@ export function ApplyAsTeacherModal({ isOpen, onClose }: { isOpen: boolean; onCl
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Por ahora aceptará cualquier código y mostrará una alerta.
-    // Cuando el backend esté listo, aquí se hará la validación real.
     if (code.trim() === "") {
       alert("Por favor, ingresa un código de invitación.");
       return;

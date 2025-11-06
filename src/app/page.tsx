@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { TeacherCard, Teacher } from "@/components/landing/TeacherCard";
 import { userService, ApiUser } from "@/services/userService";
+import { courseService } from "@/services/courseService";
+import { CourseCard, type Course } from "@/components/landing/CourseCard";
 import { Navbar } from "@/components/navbar";
 
 const teacherStyles = [
@@ -27,7 +29,8 @@ const mapApiUsersToTeachers = (apiUsers: ApiUser[]): Teacher[] => {
 
 export default function Home() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
-
+  const [courses, setCourses] = useState<Course[]>([]);
+  
   useEffect(() => {
     const fetchTeachers = async () => {
       try {
@@ -37,7 +40,18 @@ export default function Home() {
         console.error("Error al obtener los docentes:", error);
       }
     };
+
+    const fetchCourses = async () => {
+      try {
+        const courseData = await courseService.getAllCourses();
+        setCourses(courseData);
+      } catch (error) {
+        console.error("Error al obtener los cursos:", error);
+      }
+    };
+
     fetchTeachers();
+    fetchCourses();
   }, []);
 
   return (
@@ -94,6 +108,24 @@ export default function Home() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Courses Section */}
+      <section className="bg-gray-50 py-20">
+        <div className="container mx-auto px-4">
+          <h3 className="text-3xl font-bold text-gray-900 text-center mb-12">
+            Nuevos cursos
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {courses.length > 0 ? (
+              courses.map((course) => (
+                <CourseCard key={course.id_curso} course={course} />
+              ))
+            ) : (
+              <p className="col-span-3 text-center text-gray-500">No hay cursos disponibles en este momento.</p>
+            )}
           </div>
         </div>
       </section>

@@ -25,7 +25,7 @@ export const authService = {
     password: string;
     edad: number;
     avatar_url?: string;
-    rol?: string;
+    rol: 'Estudiante' | 'Docente' | 'Administrador';
   }) {
     const response = await fetch(`${API_BASE_URL}/user/register`, {
       method: 'POST',

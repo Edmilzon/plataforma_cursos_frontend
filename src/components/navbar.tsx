@@ -50,18 +50,20 @@ export function Navbar() {
 
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg py-1 z-50">
+                    {user?.rol === 'Docente' && (
+                      <Link
+                        href="/home-docente"
+                        className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                      >
+                        Menú de Docente
+                      </Link>
+                    )}
                     <button
                       className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
                       onClick={() => {
+                        logout();
                         setDropdownOpen(false);
-                        setModalOpen(true);
                       }}
-                    >
-                      Aplicar como docente
-                    </button>
-                    <button
-                      className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
-                      onClick={logout}
                     >
                       Cerrar sesión
                     </button>

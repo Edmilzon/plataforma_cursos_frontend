@@ -46,12 +46,12 @@ async function fetchData<T>(url: string): Promise<T> {
 
 export const rankingService = {
   getStudentRanking(): Promise<StudentRank[]> {
-    return fetchData<StudentRank[]>(`${API_BASE_URL}/ranking/students`);
+    return fetchData<StudentRank[]>(`${API_BASE_URL}/ranking/students`); // Mantenemos esta ruta como indicaste
   },
   getCourseRatingRanking(): Promise<CourseRatingRank[]> {
-    return fetchData<CourseRatingRank[]>(`${API_BASE_URL}/ranking/courses/rating`);
+    return fetchData<CourseRatingRank[]>(`${API_BASE_URL}/ranking/cursos_calificacion`); // Corregimos a una ruta más probable en español
   },
   getCoursePopularityRanking(): Promise<CoursePopularityRank[]> {
-    return fetchData<CoursePopularityRank[]>(`${API_BASE_URL}/ranking/courses/popularity`);
+    return fetchData<CoursePopularityRank[]>(`${API_BASE_URL}/ranking/cursos_popularidad`); // Corregimos a una ruta más probable en español
   },
 };

@@ -1,5 +1,6 @@
 // components/home-docente/AssignmentManager.tsx
 'use client';
+import { courseService } from '@/services/courseService';
 
 import { useState, useEffect } from 'react';
 
@@ -12,110 +13,120 @@ interface Assignment {
   id_leccion: number;
 }
 
-interface Lesson {
-  id_leccion: number;
-  titulo: string;
-}
-
 interface AssignmentManagerProps {
-  courseId: string;
+  lessonId: string;
+  onBack: () => void;
 }
 
-export default function AssignmentManager({ courseId }: AssignmentManagerProps) {
+export default function AssignmentManager({ lessonId, onBack }: AssignmentManagerProps) {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [selectedLesson, setSelectedLesson] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
     url_contenido: '',
     fecha_entrega: '',
-    id_leccion: 0
   });
 
-  useEffect(() => {
-    loadLessons();
-    loadAssignments();
-  }, [courseId]);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [assignmentToDelete, setAssignmentToDelete] = useState<Assignment | null>(null);
 
-  const loadLessons = async () => {
-    // Simular carga de lecciones
-    setTimeout(() => {
-      setLessons([
-        { id_leccion: 1, titulo: 'Introducción al curso' },
-        { id_leccion: 2, titulo: 'Conceptos básicos' }
-      ]);
-    }, 500);
-  };
+  useEffect(() => {
+    if (lessonId) {
+      loadAssignments();
+    }
+  }, [lessonId]);
 
   const loadAssignments = async () => {
-    // Simular carga de tareas
-    setTimeout(() => {
-      setAssignments([
-        { 
-          id_tarea: 1, 
-          titulo: 'Tarea de investigación', 
-          descripcion: 'Investigar sobre los temas vistos', 
-          url_contenido: 'https://ejemplo.com/recursos', 
-          fecha_entrega: '2024-12-31', 
-          id_leccion: 1 
-        }
-      ]);
-    }, 500);
+    setLoading(true);
+    try {
+      const assignmentsForLesson = await courseService.getAssignmentsByLesson(lessonId);
+      setAssignments(assignmentsForLesson);
+    } catch (err) {
+      setError('No se pudieron cargar las tareas.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenForm = (assignment: Assignment | null = null) => {
+    setError(null);
+    if (assignment) {
+      setEditingAssignment(assignment);
+      setFormData({
+        titulo: assignment.titulo,
+        descripcion: assignment.descripcion,
+        url_contenido: assignment.url_contenido || '',
+        fecha_entrega: new Date(assignment.fecha_entrega).toISOString().split('T')[0],
+      });
+    } else {
+      setEditingAssignment(null);
+      setFormData({
+        titulo: '',
+        descripcion: '',
+        url_contenido: '',
+        fecha_entrega: '',
+      });
+    }
+    setIsFormOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Creando tarea:', formData);
-    setShowForm(false);
-    setFormData({ 
-      titulo: '', 
-      descripcion: '', 
-      url_contenido: '', 
-      fecha_entrega: '', 
-      id_leccion: 0 
-    });
-    loadAssignments();
+    setError(null);
+    try {
+      if (editingAssignment) {
+        await courseService.updateAssignment(String(editingAssignment.id_tarea), formData);
+      } else {
+        await courseService.createAssignment(lessonId, formData);
+      }
+      setIsFormOpen(false);
+      loadAssignments();
+    } catch (err: any) {
+      setError(err.message || 'Error al guardar la tarea.');
+    }
   };
 
-  const handleLessonChange = (lessonId: string) => {
-    setSelectedLesson(lessonId);
-    setFormData({ ...formData, id_leccion: parseInt(lessonId) });
+  const openDeleteModal = (assignment: Assignment) => {
+    setAssignmentToDelete(assignment);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!assignmentToDelete) return;
+    try {
+      await courseService.deleteAssignment(String(assignmentToDelete.id_tarea));
+      setIsDeleteModalOpen(false);
+      setAssignmentToDelete(null);
+      loadAssignments();
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar la tarea.');
+      setIsDeleteModalOpen(false);
+    }
   };
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
+      <button onClick={onBack} className="mb-4 text-sm text-blue-600 hover:underline">
+        &larr; Volver a las lecciones
+      </button>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Gestión de Tareas</h2>
-        <button 
-          onClick={() => setShowForm(true)}
+        <h2 className="text-2xl font-bold text-gray-800">Gestión de Tareas</h2>
+        <button
+          onClick={() => handleOpenForm()}
           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors"
         >
           + Nueva Tarea
         </button>
       </div>
-
-      {showForm && (
-        <form onSubmit={handleSubmit} className="mb-6 p-4 border border-gray-200 rounded-lg">
-          <h3 className="font-semibold mb-4">Crear Nueva Tarea</h3>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Lección</label>
-            <select
-              value={selectedLesson}
-              onChange={(e) => handleLessonChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
-              required
-            >
-              <option value="">Seleccionar lección</option>
-              {lessons.map((lesson) => (
-                <option key={lesson.id_leccion} value={lesson.id_leccion}>
-                  {lesson.titulo}
-                </option>
-              ))}
-            </select>
-          </div>
+      {isFormOpen && (
+        <form onSubmit={handleSubmit} className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <h3 className="font-semibold mb-4 text-gray-800">{editingAssignment ? 'Editar Tarea' : 'Crear Nueva Tarea'}</h3>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
@@ -165,7 +176,7 @@ export default function AssignmentManager({ courseId }: AssignmentManagerProps) 
           <div className="flex justify-end space-x-2">
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={() => setIsFormOpen(false)}
               className="px-4 py-2 text-gray-600 hover:text-gray-800"
             >
               Cancelar
@@ -174,15 +185,17 @@ export default function AssignmentManager({ courseId }: AssignmentManagerProps) 
               type="submit"
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
-              Crear Tarea
+              {editingAssignment ? 'Actualizar Tarea' : 'Crear Tarea'}
             </button>
           </div>
         </form>
       )}
 
       <div className="space-y-4">
-        {assignments.map((assignment) => (
-          <div key={assignment.id_tarea} className="border border-gray-200 rounded-lg p-4">
+        {loading && <p>Cargando tareas...</p>}
+        {!loading && assignments.length === 0 && <p className="text-gray-500">No hay tareas en esta lección.</p>}
+        {assignments.map(assignment => (
+          <div key={assignment.id_tarea} className="border border-gray-200 rounded-lg p-4 mb-2">
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="font-semibold text-lg">{assignment.titulo}</h3>
@@ -190,21 +203,42 @@ export default function AssignmentManager({ courseId }: AssignmentManagerProps) 
                 <div className="flex space-x-4 text-xs text-gray-500">
                   <span>Entrega: {new Date(assignment.fecha_entrega).toLocaleDateString()}</span>
                   {assignment.url_contenido && (
-                    <a href={assignment.url_contenido} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                      Ver recursos
-                    </a>
+                    <a href={assignment.url_contenido} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Ver recursos</a>
                   )}
                 </div>
               </div>
               <div className="flex space-x-2">
-                <button className="text-blue-600 hover:text-blue-800 text-sm">Editar</button>
-                <button className="text-green-600 hover:text-green-800 text-sm">Revisar</button>
-                <button className="text-red-600 hover:text-red-800 text-sm">Eliminar</button>
+                <button onClick={() => handleOpenForm(assignment)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">Editar</button>
+                <button onClick={() => openDeleteModal(assignment)} className="text-red-600 hover:text-red-800 text-sm font-medium">Eliminar</button>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Modal de Confirmación de Borrado */}
+      {isDeleteModalOpen && assignmentToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl">
+            <h3 className="text-lg font-bold mb-4">Confirmar Eliminación</h3>
+            <p>¿Estás seguro de que quieres eliminar la tarea "{assignmentToDelete.titulo}"? Esta acción no se puede deshacer.</p>
+            <div className="flex justify-end space-x-4 mt-6">
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

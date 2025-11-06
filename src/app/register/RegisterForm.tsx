@@ -15,11 +15,14 @@ export default function RegisterForm() {
     password: "",
     confirmPassword: "",
     edad: "",
+    rol: "Estudiante", // Rol por defecto
   });
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -39,6 +42,8 @@ export default function RegisterForm() {
       correo: form.correo,
       password: form.password,
       edad: parseInt(form.edad, 10),
+      rol: form.rol as 'Estudiante' | 'Docente',
+      avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${form.nombre} ${form.apellido}` // Avatar por defecto
     });
 
     if (result.success) {
@@ -66,6 +71,20 @@ export default function RegisterForm() {
           <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">
             Crea tu cuenta
           </h1>
+
+          {/* Mensajes de Éxito y Error */}
+          {successMessage && (
+            <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg text-center">
+              {successMessage}
+            </div>
+          )}
+          {formError && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
+              {formError}
+            </div>
+          )}
+          {/* Muestra el error general del hook si existe y no hay un error específico del formulario */}
+          {error && !formError && <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">{error.message}</div>}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -125,6 +144,22 @@ export default function RegisterForm() {
 
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">
+                Rol
+              </label>
+              <select
+                name="rol"
+                value={form.rol}
+                onChange={handleChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white text-gray-900"
+                required
+              >
+                <option value="Estudiante">Estudiante</option>
+                <option value="Docente">Docente</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">
                 Contraseña
               </label>
               <input
@@ -162,7 +197,7 @@ export default function RegisterForm() {
               } text-white py-3 rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
             
             >
-              Registrar
+              {loading ? 'Registrando...' : successMessage ? '¡Éxito!' : 'Registrar'}
             </button>
           </form>
 
