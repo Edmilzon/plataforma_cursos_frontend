@@ -34,7 +34,7 @@ interface Assignment {
   descripcion: string;
   url_contenido: string;
   fecha_entrega: string;
-  entrega?: Delivery;
+  entrega?: any;
 }
 
 interface Evaluation {
@@ -45,15 +45,7 @@ interface Evaluation {
   fecha_hora_inicio: string;
   fecha_hora_entrega: string;
   calificacion_maxima: number;
-  entrega?: Delivery;
-}
-
-interface Delivery {
-  id_entrega: number;
-  estado: string;
-  fecha_entrega: string;
-  calificacion?: number;
-  url_archivo?: string;
+  entrega?: any;
 }
 
 export default function MyCourseDetailPage() {
@@ -83,84 +75,70 @@ export default function MyCourseDetailPage() {
         }
 
         // Obtener datos del curso y progreso
-        const [courseData, modulesData, progressData, completedLessons] = await Promise.all([
+        const [courseData, modulesData, myCourses] = await Promise.all([
           courseService.getCourseById(courseId),
           courseService.getModulesByCourse(courseId),
           enrollmentService.getMyCourses(),
-          progressService.getCompletedLessons(courseId)
         ]);
         
         setCourse(courseData);
         
         // Encontrar el progreso de este curso específico
-        const courseProgress = progressData.find((enrollment: any) => 
-          enrollment.id_curso === parseInt(courseId)
+        const courseProgress = myCourses.find((course: any) => 
+          course.id_curso === parseInt(courseId)
         );
-        setProgress(courseProgress?.porcentaje_completado || 0);
+        setProgress(courseProgress?.progreso || 0);
 
         // Obtener contenido completo de cada módulo
         const modulesWithContent = await Promise.all(
           modulesData.map(async (module: Module) => {
-            const lessons = await courseService.getLessonsByModule(courseId, module.id_modulo.toString());
-            
-            // Obtener tareas y evaluaciones para cada lección
-            const lessonsWithContent = await Promise.all(
-              lessons.map(async (lesson: Lesson) => {
-                const [assignments, evaluations, assignmentDeliveries, evaluationDeliveries] = await Promise.all([
-                  courseService.getAssignmentsByLesson(lesson.id_leccion.toString()),
-                  courseService.getEvaluationsByLesson(lesson.id_leccion.toString()),
-                  // Obtener entregas de tareas
-                  Promise.all(
-                    (await courseService.getAssignmentsByLesson(lesson.id_leccion.toString())).map(
-                      async (assignment: Assignment) => 
-                        await deliveryService.getAssignmentDelivery(assignment.id_tarea.toString())
-                    )
-                  ),
-                  // Obtener entregas de evaluaciones
-                  Promise.all(
-                    (await courseService.getEvaluationsByLesson(lesson.id_leccion.toString())).map(
-                      async (evaluation: Evaluation) => 
-                        await deliveryService.getEvaluationDelivery(evaluation.id_evaluacion.toString())
-                    )
-                  )
-                ]);
+            try {
+              const lessons = await courseService.getLessonsByModule(courseId, module.id_modulo.toString());
+              
+              // Obtener tareas y evaluaciones para cada lección
+              const lessonsWithContent = await Promise.all(
+                lessons.map(async (lesson: Lesson) => {
+                  try {
+                    const [assignments, evaluations] = await Promise.all([
+                      courseService.getAssignmentsByLesson(lesson.id_leccion.toString()),
+                      courseService.getEvaluationsByLesson(lesson.id_leccion.toString())
+                    ]);
 
-                // Marcar lección como completada si está en la lista
-                const isCompleted = completedLessons.some(
-                  (completed: any) => completed.id_leccion === lesson.id_leccion
-                );
+                    return {
+                      ...lesson,
+                      completado: false, // Por ahora siempre false
+                      tareas: assignments || [],
+                      evaluaciones: evaluations || []
+                    };
+                  } catch (error) {
+                    console.error('Error loading lesson content:', error);
+                    return {
+                      ...lesson,
+                      completado: false,
+                      tareas: [],
+                      evaluaciones: []
+                    };
+                  }
+                })
+              );
 
-                // Combinar tareas con sus entregas
-                const assignmentsWithDeliveries = assignments.map((assignment: Assignment, index: number) => ({
-                  ...assignment,
-                  entrega: assignmentDeliveries[index]
-                }));
-
-                // Combinar evaluaciones con sus entregas
-                const evaluationsWithDeliveries = evaluations.map((evaluation: Evaluation, index: number) => ({
-                  ...evaluation,
-                  entrega: evaluationDeliveries[index]
-                }));
-
-                return {
-                  ...lesson,
-                  completado: isCompleted,
-                  tareas: assignmentsWithDeliveries,
-                  evaluaciones: evaluationsWithDeliveries
-                };
-              })
-            );
-
-            return {
-              ...module,
-              lecciones: lessonsWithContent.sort((a, b) => a.orden - b.orden)
-            };
+              return {
+                ...module,
+                lecciones: lessonsWithContent.sort((a, b) => a.orden - b.orden)
+              };
+            } catch (error) {
+              console.error('Error loading module:', error);
+              return {
+                ...module,
+                lecciones: []
+              };
+            }
           })
         );
         
         setModules(modulesWithContent.sort((a, b) => a.orden - b.orden));
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Error loading course data:', error);
       } finally {
         setLoading(false);
       }
@@ -171,9 +149,8 @@ export default function MyCourseDetailPage() {
 
   const handleMarkCompleted = async (lessonId: string) => {
     try {
-      await progressService.markLessonCompleted(lessonId);
-      
-      // Actualizar estado local
+      // Por ahora solo actualizamos el estado local
+      // Más adelante conectaremos con el backend
       setModules(prev => prev.map(module => ({
         ...module,
         lecciones: module.lecciones?.map(lesson => 
@@ -183,12 +160,14 @@ export default function MyCourseDetailPage() {
         )
       })));
 
-      // Recargar progreso del curso
-      const progressData = await enrollmentService.getMyCourses();
-      const courseProgress = progressData.find((enrollment: any) => 
-        enrollment.id_curso === parseInt(courseId)
-      );
-      setProgress(courseProgress?.porcentaje_completado || 0);
+      // Actualizar progreso local
+      const totalLessons = modules.reduce((acc, module) => acc + (module.lecciones?.length || 0), 0);
+      const completedLessons = modules.reduce((acc, module) => 
+        acc + (module.lecciones?.filter(lesson => lesson.completado).length || 0), 0
+      ) + 1; // +1 porque acabamos de marcar una como completada
+      
+      const newProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+      setProgress(newProgress);
 
     } catch (error) {
       console.error('Error:', error);
@@ -209,33 +188,32 @@ export default function MyCourseDetailPage() {
     }
 
     try {
-      // Simular subida de archivo (debes implementar tu servicio de upload)
+      // Simular subida de archivo
       const fileUrl = await simulateFileUpload(selectedFile);
       
-      await deliveryService.deliverAssignment(assignmentId, fileUrl);
-      
-      // Actualizar estado local
+      // Por ahora solo actualizamos el estado local
+      // Más adelante conectaremos con el backend
       setModules(prevModules => 
-  prevModules.map(module => ({
-    ...module,
-    lecciones: module.lecciones?.map(lesson => ({
-      ...lesson,
-      tareas: lesson.tareas?.map(tarea => {
-        if (tarea.id_tarea === parseInt(assignmentId)) {
-          return {
-            ...tarea,
-            entrega: {
-              estado: 'Entregado',
-              fecha_entrega: new Date().toISOString(),
-              url_archivo: fileUrl
-            } as Delivery
-          };
-        }
-        return tarea;
-      })
-    }))
-  }))
-);
+        prevModules.map(module => ({
+          ...module,
+          lecciones: module.lecciones?.map(lesson => ({
+            ...lesson,
+            tareas: lesson.tareas?.map(tarea => {
+              if (tarea.id_tarea === parseInt(assignmentId)) {
+                return {
+                  ...tarea,
+                  entrega: {
+                    estado: 'Entregado',
+                    fecha_entrega: new Date().toISOString(),
+                    url_archivo: fileUrl
+                  }
+                };
+              }
+              return tarea;
+            })
+          }))
+        }))
+      );
 
       setSelectedFile(null);
       alert('Tarea entregada exitosamente');
@@ -248,29 +226,28 @@ export default function MyCourseDetailPage() {
 
   const handleDeliverEvaluation = async (evaluationId: string) => {
     try {
-      await deliveryService.deliverEvaluation(evaluationId);
-      
-      // Actualizar estado local
+      // Por ahora solo actualizamos el estado local
+      // Más adelante conectaremos con el backend
       setModules(prevModules => 
-  prevModules.map(module => ({
-    ...module,
-    lecciones: module.lecciones?.map(lesson => ({
-      ...lesson,
-      evaluaciones: lesson.evaluaciones?.map(evaluacion => {
-        if (evaluacion.id_evaluacion === parseInt(evaluationId)) {
-          return {
-            ...evaluacion,
-            entrega: {
-              estado: 'Entregado',
-              fecha_entrega: new Date().toISOString()
-            } as Delivery
-          };
-        }
-        return evaluacion;
-      })
-    }))
-  }))
-);
+        prevModules.map(module => ({
+          ...module,
+          lecciones: module.lecciones?.map(lesson => ({
+            ...lesson,
+            evaluaciones: lesson.evaluaciones?.map(evaluacion => {
+              if (evaluacion.id_evaluacion === parseInt(evaluationId)) {
+                return {
+                  ...evaluacion,
+                  entrega: {
+                    estado: 'Entregado',
+                    fecha_entrega: new Date().toISOString()
+                  }
+                };
+              }
+              return evaluacion;
+            })
+          }))
+        }))
+      );
 
       alert('Evaluación entregada exitosamente');
       

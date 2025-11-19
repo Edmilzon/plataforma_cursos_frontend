@@ -20,19 +20,24 @@ export default function InProgressPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const fetchMyCourses = async () => {
-      try {
-        const myCourses = await enrollmentService.getMyCourses();
-        setCourses(myCourses);
-      } catch (error) {
-        console.error('Error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchMyCourses = async () => {
+    try {
+      console.log('🔍 User ID from localStorage:', localStorage.getItem('userId'));
+      
+      const myCourses = await enrollmentService.getMyCourses();
+      console.log('📦 Courses from service:', myCourses);
+      console.log('🔢 Number of courses:', myCourses.length);
+      
+      setCourses(myCourses);
+    } catch (error) {
+      console.error('❌ Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchMyCourses();
-  }, []);
+  fetchMyCourses();
+}, []);
 
   if (loading) {
     return (

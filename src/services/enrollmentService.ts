@@ -1,31 +1,54 @@
 // services/enrollmentService.ts
 const API_BASE_URL = 'http://127.0.0.1:5000';
 
-export interface EnrollmentPayload {
-  id_curso: number;
-  id_estudiante: number;
-  metodo_pago?: string;
-  puntos_utilizados?: number;
-}
-
-export interface EnrollmentResponse {
-  message: string;
-  inscripcion: {
-    id_inscripcion: number;
-    fecha_inscripcion: string;
-    estado_progreso: string;
-    porcentaje_completado: string;
-    id_curso: number;
-    id_estudiante: number;
-  };
-}
-
 export const enrollmentService = {
-  // Verificar si el usuario está inscrito en un curso
+  async getMyCourses() {
+    try {
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        return [];
+      }
+
+      const user = JSON.parse(userData);
+      const userId = user.id_usuario;
+      
+      if (!userId) {
+        return [];
+      }
+
+      const response = await fetch(`${API_BASE_URL}/inscripciones/estudiante/${userId}`);
+      
+      if (!response.ok) {
+        return [];
+      }
+      
+      const inscripciones = await response.json();
+      
+      if (Array.isArray(inscripciones)) {
+        return inscripciones.map((inscripcion: any) => ({
+          id_curso: inscripcion.id_curso,
+          titulo: inscripcion.titulo || inscripcion.titulo_curso || `Curso ${inscripcion.id_curso}`,
+          descripcion: inscripcion.descripcion || `Continúa tu aprendizaje en este curso`,
+          imagen_portada_url: inscripcion.imagen_portada_url || '/placeholder-course.jpg',
+          progreso: parseFloat(inscripcion.porcentaje_completado) || 0
+        }));
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error getting my courses:', error);
+      return [];
+    }
+  },
+
   async checkEnrollment(courseId: string): Promise<boolean> {
     try {
-      // Necesitamos obtener todas las inscripciones del usuario y verificar
-      const userId = localStorage.getItem('userId');
+      const userData = localStorage.getItem('user');
+      if (!userData) return false;
+
+      const user = JSON.parse(userData);
+      const userId = user.id_usuario;
+      
       if (!userId) return false;
 
       const myCourses = await this.getMyCourses();
@@ -36,33 +59,18 @@ export const enrollmentService = {
     }
   },
 
-  // Obtener cursos en los que el usuario está inscrito
-  async getMyCourses() {
-    try {
-      const userId = localStorage.getItem('userId');
-      if (!userId) return [];
-
-      const response = await fetch(`${API_BASE_URL}/inscripciones/estudiante/${userId}`);
-      if (!response.ok) return [];
-      
-      const data = await response.json();
-      return Array.isArray(data) ? data : [];
-    } catch (error) {
-      console.error('Error getting my courses:', error);
-      return [];
-    }
-  },
-
-  // Inscribirse en un curso
-  async enrollInCourse(courseId: string, metodo_pago?: string, puntos_utilizados?: number): Promise<EnrollmentResponse> {
-    const userId = localStorage.getItem('userId');
-    if (!userId) {
+  async enrollInCourse(courseId: string, metodo_pago?: string, puntos_utilizados?: number): Promise<any> {
+    const userData = localStorage.getItem('user');
+    if (!userData) {
       throw new Error('Usuario no autenticado');
     }
 
-    const payload: EnrollmentPayload = {
+    const user = JSON.parse(userData);
+    const userId = user.id_usuario;
+
+    const payload: any = {
       id_curso: parseInt(courseId),
-      id_estudiante: parseInt(userId),
+      id_estudiante: userId,
     };
 
     if (metodo_pago) {
