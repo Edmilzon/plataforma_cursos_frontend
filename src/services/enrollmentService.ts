@@ -5,25 +5,16 @@ export const enrollmentService = {
   async getMyCourses() {
     try {
       const userData = localStorage.getItem('user');
-      if (!userData) {
-        return [];
-      }
+      if (!userData) return [];
 
       const user = JSON.parse(userData);
       const userId = user.id_usuario;
-      
-      if (!userId) {
-        return [];
-      }
+      if (!userId) return [];
 
       const response = await fetch(`${API_BASE_URL}/inscripciones/estudiante/${userId}`);
-      
-      if (!response.ok) {
-        return [];
-      }
-      
+      if (!response.ok) return [];
+
       const inscripciones = await response.json();
-      
       if (Array.isArray(inscripciones)) {
         return inscripciones.map((inscripcion: any) => ({
           id_curso: inscripcion.id_curso,
@@ -33,7 +24,7 @@ export const enrollmentService = {
           progreso: parseFloat(inscripcion.porcentaje_completado) || 0
         }));
       }
-      
+
       return [];
     } catch (error) {
       console.error('Error getting my courses:', error);
@@ -48,7 +39,6 @@ export const enrollmentService = {
 
       const user = JSON.parse(userData);
       const userId = user.id_usuario;
-      
       if (!userId) return false;
 
       const myCourses = await this.getMyCourses();
@@ -61,9 +51,7 @@ export const enrollmentService = {
 
   async enrollInCourse(courseId: string, metodo_pago?: string, puntos_utilizados?: number): Promise<any> {
     const userData = localStorage.getItem('user');
-    if (!userData) {
-      throw new Error('Usuario no autenticado');
-    }
+    if (!userData) throw new Error('Usuario no autenticado');
 
     const user = JSON.parse(userData);
     const userId = user.id_usuario;
@@ -73,13 +61,8 @@ export const enrollmentService = {
       id_estudiante: userId,
     };
 
-    if (metodo_pago) {
-      payload.metodo_pago = metodo_pago;
-    }
-
-    if (puntos_utilizados) {
-      payload.puntos_utilizados = puntos_utilizados;
-    }
+    if (metodo_pago) payload.metodo_pago = metodo_pago;
+    if (puntos_utilizados) payload.puntos_utilizados = puntos_utilizados;
 
     const response = await fetch(`${API_BASE_URL}/inscripciones`, {
       method: 'POST',

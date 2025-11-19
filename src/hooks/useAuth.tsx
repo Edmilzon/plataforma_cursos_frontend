@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { authService } from '@/services/authService';
 
 interface User {
+  id: number;
   id_usuario: number;
   nombre: string;
   apellido: string;
