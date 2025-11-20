@@ -245,7 +245,7 @@ export const RoleManager: React.FC<RoleManagerProps> = ({
 
       {/* Modal Permisos */}
       {showPermissionModal && selectedRole && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-white/90 bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-2">Permisos: {selectedRole.nombre}</h3>
             <p className="text-gray-600 mb-4">{selectedRole.descripcion}</p>

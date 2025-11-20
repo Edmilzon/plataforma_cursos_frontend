@@ -103,17 +103,13 @@ export default function HomeAdminPage() {
         {/* Acciones Rápidas */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-xl font-bold text-gray-800 mb-4">Acciones Rápidas</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <ActionButton 
               href="/home-admin/courses" 
               label="Gestionar Cursos" 
               color="blue" 
             />
-            <ActionButton 
-              href="/home-admin/users" 
-              label="Gestionar Usuarios" 
-              color="green" 
-            />
+          
             <ActionButton 
               href="/home-admin/permissions" 
               label="Configurar Permisos" 

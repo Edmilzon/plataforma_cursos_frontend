@@ -50,14 +50,14 @@ export const UserManager: React.FC<UserManagerProps> = ({
         parseInt(formData.edad),
         formData.password
       );
-      console.log('✅ Usuario creado exitosamente');
+      console.log(' Usuario creado exitosamente');
       setFormData({ nombre: '', apellido: '', correo: '', edad: '', password: '' });
       setShowCreateForm(false);
       setSuccess('Usuario creado exitosamente');
       setTimeout(() => setSuccess(null), 3000);
       await onRefresh();
     } catch (err: any) {
-      console.error('❌ Error al crear usuario:', err);
+      console.error(' Error al crear usuario:', err);
       setError(err.message || 'Error al crear el usuario');
       setTimeout(() => setError(null), 5000);
     } finally {
@@ -74,12 +74,12 @@ export const UserManager: React.FC<UserManagerProps> = ({
     try {
       console.log('🗑️ Eliminando usuario:', userId);
       await onDeleteUser(userId);
-      console.log('✅ Usuario eliminado exitosamente');
+      console.log(' Usuario eliminado exitosamente');
       setSuccess('Usuario eliminado exitosamente');
       setTimeout(() => setSuccess(null), 3000);
       await onRefresh();
     } catch (err: any) {
-      console.error('❌ Error al eliminar usuario:', err);
+      console.error(' Error al eliminar usuario:', err);
       setError(err.message || 'Error al eliminar el usuario');
       setTimeout(() => setError(null), 5000);
     } finally {
@@ -111,15 +111,15 @@ export const UserManager: React.FC<UserManagerProps> = ({
     setError(null);
 
     try {
-      console.log('👤 Asignando roles al usuario:', selectedUser.id_usuario, selectedRoles);
+      console.log(' Asignando roles al usuario:', selectedUser.id_usuario, selectedRoles);
       await onAssignRoles(selectedUser.id_usuario, selectedRoles);
-      console.log('✅ Roles asignados exitosamente');
+      console.log(' Roles asignados exitosamente');
       setSuccess('Roles asignados exitosamente');
       setTimeout(() => setSuccess(null), 3000);
       setShowRoleModal(false);
       await onRefresh();
     } catch (err: any) {
-      console.error('❌ Error al asignar roles:', err);
+      console.error(' Error al asignar roles:', err);
       setError(err.message || 'Error al asignar roles');
       setTimeout(() => setError(null), 5000);
     } finally {
@@ -152,13 +152,13 @@ export const UserManager: React.FC<UserManagerProps> = ({
       {/* Mensajes */}
       {success && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <p className="text-green-800">✅ {success}</p>
+          <p className="text-green-800"> {success}</p>
         </div>
       )}
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">❌ {error}</p>
+          <p className="text-red-800"> {error}</p>
         </div>
       )}
 
@@ -316,7 +316,7 @@ export const UserManager: React.FC<UserManagerProps> = ({
 
       {/* Modal Roles */}
       {showRoleModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-white/90  bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-2">
               Asignar Roles: {selectedUser.nombre} {selectedUser.apellido}
