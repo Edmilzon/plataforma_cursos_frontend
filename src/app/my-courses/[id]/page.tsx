@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { courseService } from '@/services/courseService';
 import { enrollmentService } from '@/services/enrollmentService';
+import { deliveryService } from '@/services/deliveryService';
 import { BottomNavbar } from '@/components/BottomNavbar';
 
 interface Module {
@@ -61,7 +62,6 @@ export default function MyCourseDetailPage() {
   const [activeTab, setActiveTab] = useState<TabType>('contenido');
   const [selectedAssignment, setSelectedAssignment] = useState<{assignment: Assignment, module: Module, lesson: Lesson} | null>(null);
   const [selectedEvaluation, setSelectedEvaluation] = useState<{evaluation: Evaluation, module: Module, lesson: Lesson} | null>(null);
-  const [deliveryText, setDeliveryText] = useState('');
   const [deliveryUrl, setDeliveryUrl] = useState('');
 
   useEffect(() => {
@@ -103,11 +103,50 @@ export default function MyCourseDetailPage() {
                       courseService.getEvaluationsByLesson(lesson.id_leccion.toString())
                     ]);
 
+                    // Obtener entregas para cada tarea
+                    const assignmentsWithDeliveries = await Promise.all(
+                      assignments.map(async (assignment: Assignment) => {
+                        try {
+                          const delivery = await deliveryService.getAssignmentDelivery(
+                            assignment.id_tarea.toString()
+                          );
+                          return {
+                            ...assignment,
+                            entrega: delivery || null
+                          };
+                        } catch (error) {
+                          console.error('Error loading assignment delivery:', error);
+                          return assignment;
+                        }
+                      })
+                    );
+
+                    // Obtener entregas para cada evaluación
+                    const evaluationsWithDeliveries = await Promise.all(
+                      evaluations.map(async (evaluation: Evaluation) => {
+                        try {
+                          const delivery = await deliveryService.getEvaluationDelivery(
+                            evaluation.id_evaluacion.toString()
+                          );
+                          return {
+                            ...evaluation,
+                            entrega: delivery || null
+                          };
+                        } catch (error) {
+                          console.error('Error loading evaluation delivery:', error);
+                          return evaluation;
+                        }
+                      })
+                    );
+
+                    // Verificar progreso de la lección
+                    const progressData = await deliveryService.getLessonProgress(lesson.id_leccion);
+
                     return {
                       ...lesson,
-                      completado: false,
-                      tareas: assignments || [],
-                      evaluaciones: evaluations || []
+                      completado: progressData.completado || false,
+                      tareas: assignmentsWithDeliveries || [],
+                      evaluaciones: evaluationsWithDeliveries || []
                     };
                   } catch (error) {
                     console.error('Error loading lesson content:', error);
@@ -157,13 +196,7 @@ export default function MyCourseDetailPage() {
         )
       })));
 
-      const totalLessons = modules.reduce((acc, module) => acc + (module.lecciones?.length || 0), 0);
-      const completedLessons = modules.reduce((acc, module) => 
-        acc + (module.lecciones?.filter(lesson => lesson.completado).length || 0), 0
-      ) + 1;
-      
-      const newProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
-      setProgress(newProgress);
+      updateProgress();
 
     } catch (error) {
       console.error('Error:', error);
@@ -181,7 +214,6 @@ export default function MyCourseDetailPage() {
     }
 
     setSelectedAssignment({ assignment, module, lesson });
-    setDeliveryText('');
     setDeliveryUrl('');
   };
 
@@ -201,27 +233,27 @@ export default function MyCourseDetailPage() {
     }
 
     setSelectedEvaluation({ evaluation, module, lesson });
-    setDeliveryText('');
     setDeliveryUrl('');
   };
 
   const closeModal = () => {
     setSelectedAssignment(null);
     setSelectedEvaluation(null);
-    setDeliveryText('');
     setDeliveryUrl('');
   };
 
   const handleDeliver = async () => {
     try {
       if (selectedAssignment) {
-        const deliveryData = {
-          respuesta_texto: deliveryText,
-          url_archivo: deliveryUrl,
-          fecha_entrega: new Date().toISOString()
-        };
+        if (!deliveryUrl) {
+          alert('Para entregar una tarea debes proporcionar una URL del archivo');
+          return;
+        }
 
-        // await deliveryService.deliverAssignment(selectedAssignment.assignment.id_tarea, deliveryData);
+        const response = await deliveryService.deliverAssignment(
+          selectedAssignment.assignment.id_tarea.toString(),
+          deliveryUrl
+        );
         
         setModules(prev => prev.map(module => 
           module.id_modulo === selectedAssignment.module.id_modulo 
@@ -233,7 +265,10 @@ export default function MyCourseDetailPage() {
                         ...lesson,
                         tareas: lesson.tareas?.map(tarea => 
                           tarea.id_tarea === selectedAssignment.assignment.id_tarea 
-                            ? { ...tarea, entrega: { ...deliveryData, estado: 'Entregado' } }
+                            ? { 
+                                ...tarea, 
+                                entrega: response.entrega
+                              }
                             : tarea
                         )
                       }
@@ -243,16 +278,13 @@ export default function MyCourseDetailPage() {
             : module
         ));
 
+        updateProgress();
         alert('Tarea entregada exitosamente');
       
       } else if (selectedEvaluation) {
-        const deliveryData = {
-          respuesta_texto: deliveryText,
-          url_archivo: deliveryUrl,
-          fecha_entrega: new Date().toISOString()
-        };
-
-        // await deliveryService.deliverEvaluation(selectedEvaluation.evaluation.id_evaluacion, deliveryData);
+        const response = await deliveryService.deliverEvaluation(
+          selectedEvaluation.evaluation.id_evaluacion.toString()
+        );
         
         setModules(prev => prev.map(module => 
           module.id_modulo === selectedEvaluation.module.id_modulo 
@@ -264,7 +296,10 @@ export default function MyCourseDetailPage() {
                         ...lesson,
                         evaluaciones: lesson.evaluaciones?.map(evaluacion => 
                           evaluacion.id_evaluacion === selectedEvaluation.evaluation.id_evaluacion 
-                            ? { ...evaluacion, entrega: { ...deliveryData, estado: 'Entregado' } }
+                            ? { 
+                                ...evaluacion, 
+                                entrega: response.entrega
+                              }
                             : evaluacion
                         )
                       }
@@ -274,14 +309,39 @@ export default function MyCourseDetailPage() {
             : module
         ));
 
+        updateProgress();
         alert('Evaluación entregada exitosamente');
       }
 
       closeModal();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error delivering:', error);
-      alert('Error al entregar');
+      alert(error.message || 'Error al entregar la actividad');
     }
+  };
+
+  const updateProgress = () => {
+    const totalLessons = modules.reduce((acc, module) => acc + (module.lecciones?.length || 0), 0);
+    const completedLessons = modules.reduce((acc, module) => 
+      acc + (module.lecciones?.filter(lesson => lesson.completado).length || 0), 0);
+    
+    const totalAssignments = modules.reduce((acc, module) => 
+      acc + (module.lecciones?.reduce((lessonAcc, lesson) => lessonAcc + (lesson.tareas?.length || 0), 0) || 0), 0);
+    const completedAssignments = modules.reduce((acc, module) => 
+      acc + (module.lecciones?.reduce((lessonAcc, lesson) => 
+        lessonAcc + (lesson.tareas?.filter(tarea => tarea.entrega).length || 0), 0) || 0), 0);
+    
+    const totalEvaluations = modules.reduce((acc, module) => 
+      acc + (module.lecciones?.reduce((lessonAcc, lesson) => lessonAcc + (lesson.evaluaciones?.length || 0), 0) || 0), 0);
+    const completedEvaluations = modules.reduce((acc, module) => 
+      acc + (module.lecciones?.reduce((lessonAcc, lesson) => 
+        lessonAcc + (lesson.evaluaciones?.filter(evaluacion => evaluacion.entrega).length || 0), 0) || 0), 0);
+
+    const totalItems = totalLessons + totalAssignments + totalEvaluations;
+    const completedItems = completedLessons + completedAssignments + completedEvaluations;
+
+    const newProgress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+    setProgress(newProgress);
   };
 
   const canDeliver = (dueDate: string): boolean => {
@@ -464,7 +524,7 @@ export default function MyCourseDetailPage() {
                                 <h4 className="font-medium text-gray-800 mb-2">{tarea.titulo}</h4>
                                 <p className="text-gray-600 text-sm mb-3">{tarea.descripcion}</p>
                                 <div className="text-xs text-gray-500 space-y-1">
-                                  <p>Entrega: {new Date(tarea.fecha_entrega).toLocaleDateString()}</p>
+                                  <p>📅 Entrega: {new Date(tarea.fecha_entrega).toLocaleDateString()}</p>
                                   {tarea.url_contenido && (
                                     <a 
                                       href={tarea.url_contenido} 
@@ -482,7 +542,7 @@ export default function MyCourseDetailPage() {
                                 {tarea.entrega ? (
                                   <div>
                                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                                      Entregado
+                                      ✅ Entregado
                                     </span>
                                     <p className="text-xs text-gray-500 mt-1">
                                       {new Date(tarea.entrega.fecha_entrega).toLocaleDateString()}
@@ -502,7 +562,7 @@ export default function MyCourseDetailPage() {
                                   </button>
                                 ) : (
                                   <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
-                                    Expirado
+                                    ⏰ Expirado
                                   </span>
                                 )}
                               </div>
@@ -579,7 +639,7 @@ export default function MyCourseDetailPage() {
                                 {evaluacion.entrega ? (
                                   <div>
                                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                                      Entregado
+                                      ✅ Entregado
                                     </span>
                                     <p className="text-xs text-gray-500 mt-1">
                                       {new Date(evaluacion.entrega.fecha_entrega).toLocaleDateString()}
@@ -599,7 +659,7 @@ export default function MyCourseDetailPage() {
                                   </button>
                                 ) : (
                                   <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
-                                    Expirado
+                                    ⏰ Expirado
                                   </span>
                                 )}
                               </div>
@@ -630,7 +690,7 @@ export default function MyCourseDetailPage() {
         )}
       </div>
 
-      {/* Modal de entrega - Versión más natural */}
+      {/* Modal de entrega */}
       {(selectedAssignment || selectedEvaluation) && (
         <div className="fixed inset-0 bg-white bg-opacity-95 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200">
@@ -676,35 +736,42 @@ export default function MyCourseDetailPage() {
               </div>
 
               <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tu solución (Texto)
-                    <span className="text-gray-400 text-xs ml-1">- Opcional</span>
-                  </label>
-                  <textarea
-                    value={deliveryText}
-                    onChange={(e) => setDeliveryText(e.target.value)}
-                    placeholder="Escribe tu respuesta, solución o comentarios aquí..."
-                    className="w-full h-40 px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  />
-                </div>
+                {selectedAssignment && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      URL del archivo entregado *
+                    </label>
+                    <input
+                      type="url"
+                      value={deliveryUrl}
+                      onChange={(e) => setDeliveryUrl(e.target.value)}
+                      placeholder="https://drive.google.com/... o https://github.com/..."
+                      className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      Sube tu archivo a Google Drive, Dropbox, GitHub, etc. y pega el enlace aquí
+                    </p>
+                  </div>
+                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    URL de archivo externo
-                    <span className="text-gray-400 text-xs ml-1">- Opcional</span>
-                  </label>
-                  <input
-                    type="url"
-                    value={deliveryUrl}
-                    onChange={(e) => setDeliveryUrl(e.target.value)}
-                    placeholder="https://drive.google.com/... o https://github.com/..."
-                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
-                    Puedes subir tu archivo a Google Drive, Dropbox, GitHub, etc. y pegar el enlace aquí
-                  </p>
-                </div>
+                {selectedEvaluation && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center">
+                      <div className="text-blue-500 mr-3">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm text-blue-800">
+                          Para entregar esta evaluación, solo haz clic en "Entregar Evaluación". 
+                          El sistema registrará tu entrega automáticamente.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                   <button
@@ -715,7 +782,7 @@ export default function MyCourseDetailPage() {
                   </button>
                   <button
                     onClick={handleDeliver}
-                    disabled={!deliveryText && !deliveryUrl}
+                    disabled={selectedAssignment ? !deliveryUrl : false}
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
                   >
                     {selectedAssignment ? 'Entregar Tarea' : 'Entregar Evaluación'}

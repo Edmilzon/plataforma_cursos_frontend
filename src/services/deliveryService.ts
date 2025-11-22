@@ -22,19 +22,58 @@ export interface DeliveryResponse {
   };
 }
 
+// Helper para obtener el usuario actual
+const getCurrentUserId = (): number => {
+  if (typeof window === 'undefined') return 0;
+  
+  try {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      console.error('No se encontró user en localStorage');
+      return 0;
+    }
+    
+    const user = JSON.parse(userStr);
+    if (!user || !user.id_usuario) {
+      console.error('Usuario no tiene id_usuario:', user);
+      return 0;
+    }
+    
+    return user.id_usuario;
+  } catch (error) {
+    console.error('Error obteniendo usuario:', error);
+    return 0;
+  }
+};
+
+// Helper para obtener el usuario completo
+const getCurrentUser = () => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  } catch (error) {
+    console.error('Error parsing user data:', error);
+    return null;
+  }
+};
+
 export const deliveryService = {
   // Entregar una tarea
   async deliverAssignment(assignmentId: string, fileUrl: string): Promise<DeliveryResponse> {
-    const userId = localStorage.getItem('userId');
+    const userId = getCurrentUserId();
     if (!userId) {
-      throw new Error('Usuario no autenticado');
+      throw new Error('Usuario no autenticado. Por favor, inicia sesión nuevamente.');
     }
 
     const payload: DeliveryPayload = {
-      id_usuario: parseInt(userId),
+      id_usuario: userId,
       id_tarea: parseInt(assignmentId),
       url_archivo: fileUrl
     };
+
+    console.log('Enviando entrega de tarea:', payload);
 
     const response = await fetch(`${API_BASE_URL}/entregas`, {
       method: 'POST',
@@ -52,15 +91,17 @@ export const deliveryService = {
 
   // Entregar una evaluación
   async deliverEvaluation(evaluationId: string): Promise<DeliveryResponse> {
-    const userId = localStorage.getItem('userId');
+    const userId = getCurrentUserId();
     if (!userId) {
-      throw new Error('Usuario no autenticado');
+      throw new Error('Usuario no autenticado. Por favor, inicia sesión nuevamente.');
     }
 
     const payload: DeliveryPayload = {
-      id_usuario: parseInt(userId),
+      id_usuario: userId,
       id_evaluacion: parseInt(evaluationId)
     };
+
+    console.log('Enviando entrega de evaluación:', payload);
 
     const response = await fetch(`${API_BASE_URL}/entregas`, {
       method: 'POST',
@@ -79,14 +120,19 @@ export const deliveryService = {
   // Obtener entregas de un usuario para una tarea específica
   async getAssignmentDelivery(assignmentId: string) {
     try {
-      const userId = localStorage.getItem('userId');
+      const userId = getCurrentUserId();
       if (!userId) return null;
 
-      // Esta endpoint necesitaría ser implementado en el backend
       const response = await fetch(`${API_BASE_URL}/entregas/tarea/${assignmentId}/usuario/${userId}`);
-      if (!response.ok) return null;
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
       
-      return response.json();
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error getting assignment delivery:', error);
       return null;
@@ -96,17 +142,54 @@ export const deliveryService = {
   // Obtener entregas de un usuario para una evaluación específica
   async getEvaluationDelivery(evaluationId: string) {
     try {
-      const userId = localStorage.getItem('userId');
+      const userId = getCurrentUserId();
       if (!userId) return null;
 
-      // Esta endpoint necesitaría ser implementado en el backend
       const response = await fetch(`${API_BASE_URL}/entregas/evaluacion/${evaluationId}/usuario/${userId}`);
-      if (!response.ok) return null;
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
       
-      return response.json();
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error getting evaluation delivery:', error);
       return null;
     }
+  },
+
+  // Obtener progreso de lección
+  async getLessonProgress(id_leccion: number) {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return { completado: false };
+
+      const response = await fetch(`${API_BASE_URL}/entregas/progreso/${userId}/${id_leccion}`);
+      if (!response.ok) {
+        return { completado: false };
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error getting lesson progress:', error);
+      return { completado: false };
+    }
+  },
+
+  // Método para debug: verificar información del usuario
+  debugUserInfo() {
+    const user = getCurrentUser();
+    const userId = getCurrentUserId();
+    
+    console.log('🔍 Debug - Información del usuario:', {
+      userEnLocalStorage: user,
+      userIdObtenido: userId,
+      localStorageKeys: typeof window !== 'undefined' ? Object.keys(localStorage) : 'No disponible'
+    });
+    
+    return { user, userId };
   }
-};  
+};
