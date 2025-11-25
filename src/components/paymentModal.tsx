@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { enrollmentService } from '@/services/enrollmentService';
+import { useRouter } from 'next/navigation';
 
 interface PaymentModalProps {
   courseId: number;
@@ -21,6 +22,7 @@ export default function PaymentModal({
 }: PaymentModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const router = useRouter();
 
   // Estado del formulario de tarjeta (simulado)
   const [cardData, setCardData] = useState({
@@ -38,36 +40,36 @@ export default function PaymentModal({
   };
 
   const handlePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+  e.preventDefault();
+  setError('');
 
-    // Validación simple de tarjeta (simulación)
-    if (cardData.number.length < 16) {
-      setError('Número de tarjeta inválido (simulación)');
-      return;
-    }
+  console.log("ID recibido en modal:", courseId); // <-- aquí
 
-    setIsLoading(true);
+  // Validación simple de tarjeta (simulación)
+  if (cardData.number.length < 16) {
+    setError('Número de tarjeta inválido');
+    return;
+  }
 
-    try {
-      // Llamamos al servicio que envía los datos al backend
-      const data = {
-        id_curso: courseId,
-        id_estudiante: userId,
-        metodo_pago: 'Tarjeta',
-        puntos_utilizados: 0, // por ahora sin puntos
-      };
+  setIsLoading(true);
 
-      const result = await createInscripcion(data);
+  try {
+    const result = await enrollmentService.enrollInCourse(
+      courseId.toString(),
+      'Tarjeta',
+      0
+    );
 
-      alert(result.message || `¡Te has inscrito al curso ${courseName}!`);
-      onClose(); // cerramos el modal al finalizar
-    } catch (err: any) {
-      setError(err.message || 'Error al procesar la inscripción');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    alert(result.message || `¡Te has inscrito al curso ${courseName}!`);
+    onClose();
+    router.push(`/my-courses/${courseId}`);
+  } catch (err: any) {
+    setError(err.message || 'Error al procesar la inscripción');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <div style={{
@@ -88,7 +90,7 @@ export default function PaymentModal({
 
         <form onSubmit={handlePayment}>
           <div style={{ marginBottom: '10px' }}>
-            <label>Número de Tarjeta (simulado)</label>
+            <label>Número de Tarjeta</label>
             <input
               type="text"
               name="number"

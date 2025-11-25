@@ -1,21 +1,78 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { rewardsService } from '@/services/rewardsService';
 import { BottomNavbar } from '@/components/BottomNavbar';
 
 export default function RewardsPage() {
-    return (
-        <>
-            <div className="container mx-auto mt-24 px-4 pb-20">
-                <h1 className="text-3xl font-bold">Puntos y Recompensas</h1>
-                <p className="mt-4 text-lg text-gray-600">
-                    Canjea los puntos que has ganado por increíbles recompensas.
-                </p>
-                {/* Placeholder for rewards */}
-                <div className="mt-8 p-8 border rounded-lg bg-gray-50 text-center text-gray-500">
-                    <p>La tienda de recompensas estará disponible próximamente.</p>
-                </div>
+  const [rewards, setRewards] = useState<any[]>([]);
+  const [userPoints, setUserPoints] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    loadRewards();
+  }, []);
+
+  const loadRewards = async () => {
+    try {
+      const res = await rewardsService.getRewardsWithUserStatus(0);
+      setRewards(res.rewards || []);
+      setUserPoints(res.userPoints || 0);
+    } catch (err: any) {
+      setError('No se pudieron cargar las recompensas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRedeem = async (id_recompensa: number) => {
+    try {
+      const res = await (rewardsService as any).redeemReward(id_recompensa);
+      alert(res.message);
+      loadRewards();
+    } catch {
+      alert('No fue posible canjear esta recompensa.');
+    }
+  };
+
+  if (loading) return <p className="mt-24 text-center">Cargando...</p>;
+  if (error) return <p className="mt-24 text-center text-red-500">{error}</p>;
+
+  return (
+    <>
+      <div className="container mx-auto mt-24 px-4 pb-20">
+        <h1 className="text-3xl font-bold">Puntos y Recompensas</h1>
+        <p className="mt-2 text-gray-600">Puntos disponibles: <strong>{userPoints}</strong></p>
+
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {rewards.map((r) => (
+            <div key={r.id_recompensa} className="p-6 border rounded-lg shadow bg-white">
+              <h2 className="text-xl font-semibold">{r.nombre_recompensa}</h2>
+              <p className="text-gray-600 mt-2">{r.descripcion}</p>
+
+              <p className="mt-4">
+                Costo: <strong>{r.costo_puntos} puntos</strong>
+              </p>
+
+              {r.stock <= 0 ? (
+                <p className="mt-4 font-semibold text-red-600">Agotada</p>
+              ) : userPoints < r.costo_puntos ? (
+                <p className="mt-4 text-gray-500">No tienes suficientes puntos</p>
+              ) : (
+                <button
+                  className="mt-4 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+                  onClick={() => handleRedeem(r.id_recompensa)}
+                >
+                  Canjear
+                </button>
+              )}
             </div>
-            <BottomNavbar />
-        </>
-    );
+          ))}
+        </div>
+      </div>
+
+      <BottomNavbar />
+    </>
+  );
 }
