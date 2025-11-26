@@ -76,5 +76,26 @@ export const enrollmentService = {
     }
 
     return response.json();
+  },
+
+  async getCoursesWithEnrollments(): Promise<any[]> {
+    try {
+      console.log('🔍 Obteniendo cursos populares...');
+      
+      const response = await fetch(`${API_BASE_URL}/ranking/courses/popularity`);
+      if (!response.ok) {
+        console.error('Error fetching popular courses:', response.status);
+        return [];
+      }
+      
+      const popularCourses = await response.json();
+      console.log('📊 Cursos populares obtenidos:', popularCourses);
+      
+      return Array.isArray(popularCourses) ? popularCourses : [];
+      
+    } catch (error) {
+      console.error('Error getting popular courses:', error);
+      return [];
+    }
   }
 };

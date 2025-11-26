@@ -27,7 +27,7 @@ export const courseService = {
       throw new Error('Error al obtener los cursos');
     }
     const apiCourses = await response.json();
-    
+    console.log(" ESTRUCTURA DE CURSOS:", apiCourses);
     if (!Array.isArray(apiCourses)) {
       console.error("La respuesta de la API no es un array:", apiCourses);
       return [];
