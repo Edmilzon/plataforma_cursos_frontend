@@ -4,8 +4,17 @@ import { useEffect, useState } from 'react';
 import { rewardsService } from '@/services/rewardsService';
 import { BottomNavbar } from '@/components/BottomNavbar';
 
+interface Reward {
+  id_recompensa: number;
+  nombre_recompensa: string;
+  descripcion: string;
+  costo_puntos: number;
+  stock: number;
+  canjeada: boolean;
+}
+
 export default function RewardsPage() {
-  const [rewards, setRewards] = useState<any[]>([]);
+  const [rewards, setRewards] = useState<Reward[]>([]);
   const [userPoints, setUserPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -16,25 +25,38 @@ export default function RewardsPage() {
 
   const loadRewards = async () => {
     try {
-      const res = await rewardsService.getRewardsWithUserStatus(0);
+      const userString = localStorage.getItem('user');
+      if (!userString) throw new Error('Usuario no encontrado en localStorage');
+      const user = JSON.parse(userString);
+
+      const res = await rewardsService.getRewardsWithUserStatus(user.id_usuario);
+      
       setRewards(res.rewards || []);
-      setUserPoints(res.userPoints || 0);
+      setUserPoints(user.saldo_punto || 0);
     } catch (err: any) {
+      console.error(err);
       setError('No se pudieron cargar las recompensas');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRedeem = async (id_recompensa: number) => {
+  const handleRedeem = async (rewardId: number) => {
     try {
-      const res = await (rewardsService as any).redeemReward(id_recompensa);
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (!user.id_usuario) {
+        alert('Usuario no encontrado');
+        return;
+      }
+
+      const res = await rewardsService.redeemReward(user.id_usuario, rewardId);
       alert(res.message);
       loadRewards();
-    } catch {
-      alert('No fue posible canjear esta recompensa.');
+    } catch (err: any) {
+      alert(err.message || 'No fue posible canjear esta recompensa.');
     }
   };
+
 
   if (loading) return <p className="mt-24 text-center">Cargando...</p>;
   if (error) return <p className="mt-24 text-center text-red-500">{error}</p>;
@@ -51,14 +73,14 @@ export default function RewardsPage() {
               <h2 className="text-xl font-semibold">{r.nombre_recompensa}</h2>
               <p className="text-gray-600 mt-2">{r.descripcion}</p>
 
-              <p className="mt-4">
-                Costo: <strong>{r.costo_puntos} puntos</strong>
-              </p>
+              <p className="mt-4">Costo: <strong>{r.costo_puntos} puntos</strong></p>
 
               {r.stock <= 0 ? (
                 <p className="mt-4 font-semibold text-red-600">Agotada</p>
               ) : userPoints < r.costo_puntos ? (
                 <p className="mt-4 text-gray-500">No tienes suficientes puntos</p>
+              ) : r.canjeada ? (
+                <p className="mt-4 text-green-600 font-semibold">Ya canjeada</p>
               ) : (
                 <button
                   className="mt-4 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
