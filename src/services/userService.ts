@@ -1,3 +1,4 @@
+// services/userService.ts - VERSIÓN CORREGIDA
 const API_BASE_URL = 'http://127.0.0.1:5000';
 
 export interface ApiUser {
@@ -7,9 +8,58 @@ export interface ApiUser {
   correo: string;
   edad: number;
   rol: 'Docente' | 'Estudiante' | 'Administrador';
+  fecha_registro?: string;
+  avatar_url?: string;
+  saldo_punto?: number;
 }
 
 export const userService = {
+  async getUsersByRole(role: 'Docente' | 'Estudiante' | 'Administrador'): Promise<ApiUser[]> {
+    try {
+      console.log(`🔍 Obteniendo usuarios con rol: ${role}`);
+      
+      const response = await fetch(`${API_BASE_URL}/user/rol?rol=${role}`);
+      
+      console.log(`📊 Response status: ${response.status} ${response.statusText}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(` Error del servidor:`, errorText);
+        throw new Error(`Error ${response.status}: No se pudieron obtener los usuarios con rol ${role}`);
+      }
+
+      const users = await response.json();
+      console.log(` Usuarios obtenidos:`, users);
+      
+      return Array.isArray(users) ? users : [];
+      
+    } catch (error) {
+      console.error(` Error en getUsersByRole:`, error);
+      throw error;
+    }
+  },
+
+  // NUEVO: Obtener todos los usuarios
+  async getAllUsers(): Promise<ApiUser[]> {
+    try {
+      console.log('🔍 Obteniendo todos los usuarios...');
+      
+      const response = await fetch(`${API_BASE_URL}/user`);
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudieron obtener todos los usuarios`);
+      }
+
+      const users = await response.json();
+      console.log(` Todos los usuarios obtenidos:`, users.length);
+      
+      return Array.isArray(users) ? users : [];
+      
+    } catch (error) {
+      console.error(' Error en getAllUsers:', error);
+      throw error;
+    }
+  },
 
   async getProfile(userId: number): Promise<ApiUser> {
     const token = localStorage.getItem('token');
@@ -29,18 +79,5 @@ export const userService = {
     }
 
     return response.json();
-  },
-
-  async getUsersByRole(role: 'Docente' | 'Estudiante' | 'Administrador'): Promise<ApiUser[]> {
-    const response = await fetch(`${API_BASE_URL}/user/rol?rol=${role}`);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({})); // Intenta parsear JSON, si falla, devuelve objeto vacío
-      throw new Error(errorData.message || `No se pudieron obtener los usuarios con el rol ${role}.`);
-    }
-
-    const users = await response.json();
-    
-    return Array.isArray(users) ? users : [];
   }
 };

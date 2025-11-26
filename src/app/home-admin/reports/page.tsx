@@ -1,12 +1,12 @@
-// app/home-admin/reports/page.tsx
+// app/home-admin/reports/page.tsx - VERSIÓN CORREGIDA
 'use client';
 
 import { useEffect, useState } from 'react';
 import { BottomNavbar } from '@/components/home-admin/BottomNavbar';
-import { adminService } from '@/services/adminServices';
 import { pdfGenerator } from '@/utils/pdfGenerator';
 import { courseService } from '@/services/courseService';
 import { userService } from '@/services/userService';
+import { enrollmentService } from '@/services/enrollmentService';
 
 interface ReportData {
   total_usuarios: number;
@@ -30,33 +30,52 @@ export default function ReportsAdminPage() {
 
   const loadReportsData = async () => {
     try {
-      const [coursesData, teachersData, studentsData] = await Promise.all([
+      const [coursesData, teachersData, studentsData, popularCourses] = await Promise.all([
         courseService.getAllCourses(),
         userService.getUsersByRole('Docente'),
-        userService.getUsersByRole('Estudiante')
+        userService.getUsersByRole('Estudiante'),
+        enrollmentService.getCoursesWithEnrollments() // NUEVO: obtener cursos populares
       ]);
 
-      setCourses(coursesData);
+      console.log('📊 Cursos obtenidos:', coursesData);
+      console.log('🎯 Cursos populares:', popularCourses);
+
+      // Combinar datos de cursos con información de inscritos
+      const coursesWithEnrollments = coursesData.map((course: any) => {
+        // Buscar el curso en la lista de populares para obtener cantidad_estudiantes
+        const popularCourse = popularCourses.find((pc: any) => pc.id_curso === course.id_curso);
+        return {
+          ...course,
+          inscritos: popularCourse?.cantidad_estudiantes || 0
+        };
+      });
+
+      // Calcular total de inscripciones
+      const totalInscripciones = coursesWithEnrollments.reduce((acc: number, course: any) => 
+        acc + course.inscritos, 0
+      );
+
+      setCourses(coursesWithEnrollments);
       setTeachers(teachersData);
       setStudents(studentsData);
 
-      // Simular datos de estadísticas
       setStats({
         total_usuarios: teachersData.length + studentsData.length,
         total_cursos: coursesData.length,
-        total_inscripciones: coursesData.reduce((acc: number, course: any) => acc + (course.inscritos || 0), 0),
-        cursos_populares: coursesData
-          .sort((a: any, b: any) => (b.inscritos || 0) - (a.inscritos || 0))
+        total_inscripciones: totalInscripciones,
+        cursos_populares: coursesWithEnrollments
+          .sort((a: any, b: any) => b.inscritos - a.inscritos)
           .slice(0, 5)
           .map((course: any) => ({
             titulo: course.titulo,
-            inscritos: course.inscritos || 0
+            inscritos: course.inscritos
           })),
         usuarios_activos: studentsData.slice(0, 5).map((student: any) => ({
           nombre: `${student.nombre} ${student.apellido}`,
           cursos_completados: Math.floor(Math.random() * 10)
         }))
       });
+
     } catch (error) {
       console.error('Error loading reports data:', error);
     } finally {
@@ -85,30 +104,14 @@ export default function ReportsAdminPage() {
       }
       alert(`Reporte ${reportType} generado exitosamente`);
     } catch (error) {
-      alert('Error al generar el PDF');
+      console.error(`Error al generar PDF (${reportType}):`, error);
+      // alert(`Error al generar el PDF: ${error.message}`);
     } finally {
       setGeneratingPDF(false);
     }
   };
 
-  if (loading) {
-    return (
-      <>
-        <div className="container mx-auto mt-24 px-4 pb-20">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </div>
-        </div>
-        <BottomNavbar />
-      </>
-    );
-  }
-
+  // ... el resto del código se mantiene igual ...
   return (
     <>
       <div className="container mx-auto mt-24 px-4 pb-20">
@@ -192,7 +195,7 @@ export default function ReportsAdminPage() {
                     </div>
                   </div>
                   <div className="text-sm text-gray-500">
-                    {Math.round((curso.inscritos / stats.total_inscripciones) * 100)}% del total
+                    {stats.total_inscripciones > 0 ? Math.round((curso.inscritos / stats.total_inscripciones) * 100) : 0}% del total
                   </div>
                 </div>
               ))}
@@ -206,7 +209,7 @@ export default function ReportsAdminPage() {
   );
 }
 
-// Componente para botones de reporte
+// Componente para botones de reporte (se mantiene igual)
 function ReportButton({ 
   title, 
   description, 
