@@ -11,6 +11,9 @@ interface User {
   apellido: string;
   correo: string;
   rol: string;
+  saldo_punto?: number;
+  avatar_url?: string;
+  edad?: number;
 }
 
 interface AuthContextType {
@@ -31,6 +34,7 @@ interface AuthContextType {
     rol: 'Estudiante' | 'Docente' | 'Administrador';
   }) => Promise<{ success: boolean; error?: any }>;
   loading: boolean;
+  updateUser: (updatedUser: Partial<User>) => void;
   error: string | null;
 }
 
@@ -47,7 +51,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     if (token && userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      // Aseguramos que id_usuario siempre tenga el valor correcto
+      if (parsedUser.id && !parsedUser.id_usuario) {
+        parsedUser.id_usuario = parsedUser.id;
+      }
+      setUser(parsedUser);
       setIsAuthenticated(true);
     }
   }, []);
@@ -99,9 +108,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/'); 
   };
 
+  const updateUser = (updatedData: Partial<User>) => {
+    setUser(prevUser => {
+      if (!prevUser) return null;
+      const newUser = { ...prevUser, ...updatedData };
+      localStorage.setItem('user', JSON.stringify(newUser));
+      return newUser;
+    });
+  };
+
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, user, login, logout, register, loading, error }}
+      value={{ isAuthenticated, user, login, logout, register, loading, error, updateUser }}
     >
       {children}
     </AuthContext.Provider>

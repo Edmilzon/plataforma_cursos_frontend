@@ -1,41 +1,65 @@
-// src/services/rewardsService.ts
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+export interface Reward {
+  id_recompensa: number;
+  nombre: string;
+  descripcion:string;
+  tipo: string;
+  puntos_requeridos: number;
+  cantidad_disponible: number;
+  estado: string;
+  imagen_url: string;
+}
+
 export const rewardsService = {
-  getRewardsWithUserStatus: async (userId: number) => {
-    try {
-      const res = await fetch(`/api/rewards?userId=${userId}`);
-      if (!res.ok) throw new Error('Error al cargar las recompensas');
-      const data = await res.json();
-      console.log(data);
-      return {
-        rewards: data.rewards || [],
-        userPoints: data.userPoints || 0,
-      };
-    } catch (err) {
-      console.error(err);
-      throw err;
+  /**
+   * Obtiene todas las recompensas disponibles.
+   */
+  async getRewards(): Promise<Reward[]> {
+    const response = await fetch(`${API_URL}/recompensas`);
+
+    if (!response.ok) {
+      console.error('Error al obtener las recompensas:', response.statusText);
+      throw new Error('No se pudieron cargar las recompensas. Inténtalo de nuevo más tarde.');
     }
+
+    return response.json();
   },
 
-  redeemReward: async (userId: number, rewardId: number) => {
-  try {
-    const res = await fetch(`/Api/recompensas/${rewardId}/canjear`, {  // observa la mayúscula 'A' en Api
+  /**
+   * Canjea una recompensa para el usuario autenticado.
+   * @param rewardId - El ID de la recompensa a canjear.
+   * @param requiredPoints - Los puntos necesarios para la recompensa.
+   */
+  async redeemReward(rewardId: number, requiredPoints: number): Promise<any> {
+    const userData = localStorage.getItem('user');
+    if (!userData) {
+      throw new Error('Usuario no autenticado. Por favor, inicia sesión para canjear recompensas.');
+    }
+
+    const user = JSON.parse(userData);
+    const userId = user.id_usuario;
+    const userPoints = user.saldo_punto ?? 0;
+
+    if (!userId) {
+      throw new Error('No se pudo obtener la información del usuario.');
+    }
+
+    if (userPoints < requiredPoints) {
+      throw new Error('No tienes suficientes puntos para canjear esta recompensa.');
+    }
+
+    const response = await fetch(`${API_URL}/recompensas/${rewardId}/canjear`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id_usuario: userId }),
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Error al canjear la recompensa: ${text}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Error desconocido al canjear la recompensa.' }));
+      throw new Error(errorData.message || 'Ocurrió un error al procesar tu solicitud.');
     }
 
-    const data = await res.json();
-    if (!data.success) throw new Error(data.message || 'Error al canjear la recompensa');
-    return data;
-
-  } catch (err: any) {
-    console.error(err);
-    throw err;
-  }
-}
+    return response.json();
+  },
 };
