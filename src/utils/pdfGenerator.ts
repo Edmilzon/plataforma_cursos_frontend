@@ -1,189 +1,205 @@
-// utils/pdfGenerator.ts - VERSIÓN CORREGIDA
+// src/utils/pdfGenerator.ts - VERSIÓN SIN MÉTODO ALTERNATIVO
 import jsPDF from 'jspdf';
 
 export const pdfGenerator = {
-  // Reporte de Estudiantes - Sin autoTable
-  generateStudentsPDF(students: any[], title: string = 'Reporte de Estudiantes') {
-    const doc = new jsPDF();
-    
-    // Título
-    doc.setFontSize(20);
-    doc.text(title, 20, 20);
-    doc.setFontSize(10);
-    doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 20, 30);
-    
-    let yPosition = 50;
-    
-    // Encabezados de tabla
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text('Nombre', 20, yPosition);
-    doc.text('Email', 80, yPosition);
-    doc.text('Edad', 140, yPosition);
-    doc.text('Fecha Registro', 160, yPosition);
-    
-    yPosition += 10;
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(10);
-    
-    // Datos de estudiantes
-    students.forEach((student, index) => {
-      if (yPosition > 270) { // Nueva página si se llena
-        doc.addPage();
-        yPosition = 20;
-      }
-      
-      // Manejar campos undefined de forma segura
-      const nombreCompleto = `${student.nombre || ''} ${student.apellido || ''}`.trim();
-      const email = student.correo || 'N/A';
-      const edad = student.edad ? student.edad.toString() : 'N/A';
-      const fechaRegistro = student.fecha_registro 
-        ? new Date(student.fecha_registro).toLocaleDateString() 
-        : 'N/A';
-      
-      doc.text(nombreCompleto, 20, yPosition);
-      doc.text(email, 80, yPosition);
-      doc.text(edad, 140, yPosition);
-      doc.text(fechaRegistro, 160, yPosition);
-      
-      yPosition += 8;
-    });
-
-    doc.save(`reporte-estudiantes-${new Date().toISOString().split('T')[0]}.pdf`);
-  },
-
-  // Reporte de Cursos - Sin autoTable
-  generateCoursesPDF(courses: any[], title: string = 'Reporte de Cursos') {
-    const doc = new jsPDF();
-    
-    doc.setFontSize(20);
-    doc.text(title, 20, 20);
-    doc.setFontSize(10);
-    doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 20, 30);
-    
-    let yPosition = 50;
-    
-    // Encabezados
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text('Curso', 20, yPosition);
-    doc.text('Modalidad', 80, yPosition);
-    doc.text('Inscritos', 120, yPosition);
-    doc.text('Estado', 140, yPosition);
-    
-    yPosition += 10;
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(10);
-    
-    // Datos de cursos
-    courses.forEach((course, index) => {
-      if (yPosition > 270) {
-        doc.addPage();
-        yPosition = 20;
-      }
-      
-      // Manejar campos undefined de forma segura
-      const titulo = course.titulo || 'Sin título';
-      const modalidad = course.modalidad || 'N/A';
-      const inscritos = (course.inscritos || 0).toString();
-      const estado = course.estado || 'Activo';
-      
-      doc.text(titulo, 20, yPosition);
-      doc.text(modalidad, 80, yPosition);
-      doc.text(inscritos, 120, yPosition);
-      doc.text(estado, 140, yPosition);
-      
-      yPosition += 8;
-    });
-
-    doc.save(`reporte-cursos-${new Date().toISOString().split('T')[0]}.pdf`);
-  },
-
-  // Reporte de Profesores - Sin autoTable
-  generateTeachersPDF(teachers: any[], title: string = 'Reporte de Profesores') {
-    const doc = new jsPDF();
-    
-    doc.setFontSize(20);
-    doc.text(title, 20, 20);
-    doc.setFontSize(10);
-    doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 20, 30);
-    
-    let yPosition = 50;
-    
-    // Encabezados
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text('Nombre', 20, yPosition);
-    doc.text('Email', 80, yPosition);
-    doc.text('Fecha Registro', 140, yPosition);
-    
-    yPosition += 10;
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(10);
-    
-    // Datos de profesores
-    teachers.forEach((teacher, index) => {
-      if (yPosition > 270) {
-        doc.addPage();
-        yPosition = 20;
-      }
-      
-      // Manejar campos undefined de forma segura
-      const nombreCompleto = `${teacher.nombre || ''} ${teacher.apellido || ''}`.trim();
-      const email = teacher.correo || 'N/A';
-      const fechaRegistro = teacher.fecha_registro 
-        ? new Date(teacher.fecha_registro).toLocaleDateString() 
-        : 'N/A';
-      
-      doc.text(nombreCompleto, 20, yPosition);
-      doc.text(email, 80, yPosition);
-      doc.text(fechaRegistro, 140, yPosition);
-      
-      yPosition += 8;
-    });
-
-    doc.save(`reporte-profesores-${new Date().toISOString().split('T')[0]}.pdf`);
-  },
-
-  // Reporte General
-  generateGeneralReport(stats: any, title: string = 'Reporte General de la Plataforma') {
-    const doc = new jsPDF();
-    
-    doc.setFontSize(20);
-    doc.text(title, 14, 22);
-    doc.setFontSize(10);
-    doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 30);
-    
-    let yPosition = 50;
-    
-    // Estadísticas generales
-    doc.setFontSize(16);
-    doc.text('Estadísticas Generales', 14, yPosition);
-    yPosition += 10;
-    
-    doc.setFontSize(12);
-    doc.text(`• Total de Usuarios: ${stats.total_usuarios || 0}`, 20, yPosition);
-    yPosition += 7;
-    doc.text(`• Total de Cursos: ${stats.total_cursos || 0}`, 20, yPosition);
-    yPosition += 7;
-    doc.text(`• Total de Inscripciones: ${stats.total_inscripciones || 0}`, 20, yPosition);
-    yPosition += 15;
-
-    // Cursos populares
-    if (stats.cursos_populares && stats.cursos_populares.length > 0) {
-      doc.setFontSize(14);
-      doc.text('Cursos Más Populares', 14, yPosition);
-      yPosition += 10;
-      
-      stats.cursos_populares.forEach((curso: any, index: number) => {
-        doc.setFontSize(10);
-        const titulo = curso.titulo || 'Curso sin título';
-        const inscritos = curso.inscritos || 0;
-        doc.text(`${index + 1}. ${titulo} - ${inscritos} inscritos`, 20, yPosition);
-        yPosition += 6;
+  async generateReportPDF(element: HTMLElement, reportType: string): Promise<boolean> {
+    try {
+      console.log('🔄 Iniciando captura de PDF...');
+      console.log('📏 Dimensiones del elemento:', {
+        scrollWidth: element.scrollWidth,
+        scrollHeight: element.scrollHeight,
+        clientWidth: element.clientWidth,
+        clientHeight: element.clientHeight,
+        offsetHeight: element.offsetHeight
       });
-    }
+      
+      this.prepareElementForCapture(element);
+      
+      // Esperar a que el DOM se actualice
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const html2canvas = (await import('html2canvas')).default;
+      
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: true,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        windowHeight: element.scrollHeight,
+        windowWidth: element.scrollWidth,
+        proxy: undefined,
+        ignoreElements: (el: Element) => {
+          return el.tagName === 'SCRIPT' || el.tagName === 'LINK' || el.tagName === 'STYLE';
+        }
+      });
 
-    doc.save(`reporte-general-${new Date().toISOString().split('T')[0]}.pdf`);
+      console.log('✅ Canvas creado:', {
+        width: canvas.width,
+        height: canvas.height,
+        isEmpty: canvas.width === 0 || canvas.height === 0
+      });
+      
+      if (canvas.width === 0 || canvas.height === 0) {
+        throw new Error('Canvas vacío - el elemento no se capturó correctamente');
+      }
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = imgHeight / imgWidth;
+      
+      let imgPDFWidth = pdfWidth - 20;
+      let imgPDFHeight = imgPDFWidth * ratio;
+      
+      const needsMultiplePages = imgPDFHeight > pdfHeight - 20;
+      
+      console.log('📄 Configuración PDF:', {
+        pdfWidth,
+        pdfHeight,
+        imgPDFWidth,
+        imgPDFHeight,
+        needsMultiplePages
+      });
+      
+      if (needsMultiplePages) {
+        this.addImageToMultiplePages(pdf, canvas, imgPDFWidth, imgPDFHeight);
+      } else {
+        const x = (pdfWidth - imgPDFWidth) / 2;
+        const y = 10;
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(imgData, 'JPEG', x, y, imgPDFWidth, imgPDFHeight);
+      }
+      
+      // ⭐⭐ SOLO UN SAVE ⭐⭐
+      const fileName = `reporte-${reportType}.pdf`;
+      pdf.save(fileName);
+      
+      console.log('✅ PDF generado correctamente:', fileName);
+      return true;
+      
+    } catch (error) {
+      console.error('❌ Error en captura:', error);
+      // ⭐⭐ NO MÁS MÉTODOS ALTERNATIVOS ⭐⭐
+      alert('No se pudo generar el PDF. Intente nuevamente.');
+      return false;
+    }
+  },
+
+  prepareElementForCapture(element: HTMLElement) {
+    const originalStyles = element.getAttribute('style');
+    
+    // Limpiar cualquier clase que pudiera ocultar el elemento
+    element.style.cssText = `
+      background: white !important;
+      color: black !important;
+      font-family: Arial, sans-serif !important;
+      padding: 20px !important;
+      margin: 0 !important;
+      width: auto !important;
+      min-width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      line-height: 1.5 !important;
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      overflow: visible !important;
+    `;
+    
+    const allElements = element.querySelectorAll('*');
+    allElements.forEach(el => {
+      const htmlEl = el as HTMLElement;
+      
+      // Asegurar que TODO sea visible
+      htmlEl.style.visibility = 'visible !important';
+      htmlEl.style.opacity = '1 !important';
+      htmlEl.style.display = htmlEl.style.display === 'none' ? 'block !important' : htmlEl.style.display;
+      htmlEl.style.position = htmlEl.style.position === 'absolute' && htmlEl.style.display === 'none' ? 'static !important' : htmlEl.style.position;
+      
+      if (['P', 'DIV', 'SPAN'].includes(htmlEl.tagName)) {
+        htmlEl.style.marginBottom = '8px !important';
+        htmlEl.style.lineHeight = '1.5 !important';
+        htmlEl.style.display = 'block !important';
+      }
+      
+      if (['H1', 'H2', 'H3', 'H4'].includes(htmlEl.tagName)) {
+        htmlEl.style.margin = '15px 0 10px 0 !important';
+        htmlEl.style.padding = '0 !important';
+        htmlEl.style.lineHeight = '1.3 !important';
+        htmlEl.style.display = 'block !important';
+      }
+      
+      if (htmlEl.tagName === 'TABLE') {
+        htmlEl.style.borderSpacing = '0 !important';
+        htmlEl.style.borderCollapse = 'collapse !important';
+        htmlEl.style.margin = '15px 0 !important';
+        htmlEl.style.width = '100% !important';
+        htmlEl.style.display = 'table !important';
+      }
+      
+      if (htmlEl.tagName === 'TR') {
+        htmlEl.style.display = 'table-row !important';
+      }
+      
+      if (htmlEl.tagName === 'TD' || htmlEl.tagName === 'TH') {
+        htmlEl.style.padding = '8px !important';
+        htmlEl.style.border = '1px solid #999 !important';
+        htmlEl.style.lineHeight = '1.4 !important';
+        htmlEl.style.display = 'table-cell !important';
+      }
+      
+      if (htmlEl.tagName === 'CANVAS' || htmlEl.tagName === 'IMG') {
+        htmlEl.style.display = 'block !important';
+        htmlEl.style.margin = '15px auto !important';
+        htmlEl.style.maxWidth = '100% !important';
+        htmlEl.style.height = 'auto !important';
+      }
+      
+      // Remover transforms y filters que pueden afectar la captura
+      htmlEl.style.animation = 'none !important';
+      htmlEl.style.transition = 'none !important';
+      htmlEl.style.transform = 'none !important';
+      htmlEl.style.filter = 'none !important';
+      htmlEl.style.boxShadow = 'none !important';
+    });
+    
+    console.log('✅ Elemento preparado para captura');
+  },
+
+  addImageToMultiplePages(pdf: jsPDF, canvas: HTMLCanvasElement, imgPDFWidth: number, imgPDFHeight: number) {
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    
+    let currentHeight = 0;
+    const pageHeight = pdfHeight - 20;
+    
+    while (currentHeight < imgPDFHeight) {
+      if (currentHeight > 0) {
+        pdf.addPage();
+      }
+      
+      const heightThisPage = Math.min(pageHeight, imgPDFHeight - currentHeight);
+      const x = (pdfWidth - imgPDFWidth) / 2;
+      const y = 10;
+      
+      pdf.addImage(
+        imgData, 
+        'JPEG', 
+        x, 
+        y - currentHeight,
+        imgPDFWidth, 
+        imgPDFHeight
+      );
+      
+      currentHeight += pageHeight;
+    }
   }
 };

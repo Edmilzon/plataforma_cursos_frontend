@@ -1,12 +1,11 @@
-// app/home-admin/reports/page.tsx - VERSIÓN CORREGIDA
+// src/app/home-admin/reports/page.tsx - VERSIÓN MEJORADA
 'use client';
 
 import { useEffect, useState } from 'react';
 import { BottomNavbar } from '@/components/home-admin/BottomNavbar';
+import { ReportPreviewModal } from '@/components/home-admin/ReportPreviewModal';
+import { reportDataService } from '@/utils/reportDataService';
 import { pdfGenerator } from '@/utils/pdfGenerator';
-import { courseService } from '@/services/courseService';
-import { userService } from '@/services/userService';
-import { enrollmentService } from '@/services/enrollmentService';
 
 interface ReportData {
   total_usuarios: number;
@@ -18,10 +17,16 @@ interface ReportData {
 
 export default function ReportsAdminPage() {
   const [stats, setStats] = useState<ReportData | null>(null);
+  const [students, setStudents] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
+  const [generalStats, setGeneralStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Estados para el modal de vista previa
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [currentReportType, setCurrentReportType] = useState<'students' | 'courses' | 'teachers' | 'general'>('general');
+  const [currentReportData, setCurrentReportData] = useState<any>(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
 
   useEffect(() => {
@@ -30,50 +35,34 @@ export default function ReportsAdminPage() {
 
   const loadReportsData = async () => {
     try {
-      const [coursesData, teachersData, studentsData, popularCourses] = await Promise.all([
-        courseService.getAllCourses(),
-        userService.getUsersByRole('Docente'),
-        userService.getUsersByRole('Estudiante'),
-        enrollmentService.getCoursesWithEnrollments() // NUEVO: obtener cursos populares
+      console.log('📊 Cargando datos para reportes...');
+      
+      const [studentsData, coursesData, teachersData, generalStatsData] = await Promise.all([
+        reportDataService.getStudentReportData(),
+        reportDataService.getCourseReportData(),
+        reportDataService.getTeacherReportData(),
+        reportDataService.getGeneralStats()
       ]);
 
-      console.log('📊 Cursos obtenidos:', coursesData);
-      console.log('🎯 Cursos populares:', popularCourses);
-
-      // Combinar datos de cursos con información de inscritos
-      const coursesWithEnrollments = coursesData.map((course: any) => {
-        // Buscar el curso en la lista de populares para obtener cantidad_estudiantes
-        const popularCourse = popularCourses.find((pc: any) => pc.id_curso === course.id_curso);
-        return {
-          ...course,
-          inscritos: popularCourse?.cantidad_estudiantes || 0
-        };
+      console.log('✅ Datos cargados:', {
+        students: studentsData.length,
+        courses: coursesData.length,
+        teachers: teachersData.length,
+        generalStats: generalStatsData
       });
 
-      // Calcular total de inscripciones
-      const totalInscripciones = coursesWithEnrollments.reduce((acc: number, course: any) => 
-        acc + course.inscritos, 0
-      );
-
-      setCourses(coursesWithEnrollments);
-      setTeachers(teachersData);
       setStudents(studentsData);
+      setCourses(coursesData);
+      setTeachers(teachersData);
+      setGeneralStats(generalStatsData);
 
+      // Preparar stats para las tarjetas
       setStats({
-        total_usuarios: teachersData.length + studentsData.length,
-        total_cursos: coursesData.length,
-        total_inscripciones: totalInscripciones,
-        cursos_populares: coursesWithEnrollments
-          .sort((a: any, b: any) => b.inscritos - a.inscritos)
-          .slice(0, 5)
-          .map((course: any) => ({
-            titulo: course.titulo,
-            inscritos: course.inscritos
-          })),
-        usuarios_activos: studentsData.slice(0, 5).map((student: any) => ({
-          nombre: `${student.nombre} ${student.apellido}`,
-          cursos_completados: Math.floor(Math.random() * 10)
-        }))
+        total_usuarios: generalStatsData.total_usuarios,
+        total_cursos: generalStatsData.total_cursos,
+        total_inscripciones: generalStatsData.total_inscripciones,
+        cursos_populares: generalStatsData.cursos_populares,
+        usuarios_activos: generalStatsData.usuarios_activos
       });
 
     } catch (error) {
@@ -83,35 +72,77 @@ export default function ReportsAdminPage() {
     }
   };
 
-  const handleGeneratePDF = async (reportType: string) => {
+  const handleShowPreview = async (reportType: 'students' | 'courses' | 'teachers' | 'general') => {
+    setCurrentReportType(reportType);
     setGeneratingPDF(true);
+
     try {
+      let reportData;
+      
       switch (reportType) {
         case 'students':
-          pdfGenerator.generateStudentsPDF(students);
+          reportData = {
+            ...generalStats,
+            students: students,
+            teachers_count: teachers.length
+          };
           break;
         case 'courses':
-          pdfGenerator.generateCoursesPDF(courses);
+          reportData = {
+            ...generalStats,
+            courses: courses,
+            teachers_count: teachers.length
+          };
           break;
         case 'teachers':
-          pdfGenerator.generateTeachersPDF(teachers);
+          reportData = {
+            ...generalStats,
+            teachers: teachers,
+            teachers_count: teachers.length
+          };
           break;
         case 'general':
-          if (stats) {
-            pdfGenerator.generateGeneralReport(stats);
-          }
+          reportData = {
+            ...generalStats,
+            students_count: students.length,
+            teachers_count: teachers.length,
+            courses_count: courses.length
+          };
           break;
       }
-      alert(`Reporte ${reportType} generado exitosamente`);
+
+      setCurrentReportData(reportData);
+      setIsPreviewOpen(true);
+      
     } catch (error) {
-      console.error(`Error al generar PDF (${reportType}):`, error);
-      // alert(`Error al generar el PDF: ${error.message}`);
+      console.error('Error preparing preview:', error);
+      alert('Error al preparar la vista previa');
     } finally {
       setGeneratingPDF(false);
     }
   };
 
-  // ... el resto del código se mantiene igual ...
+  const handleGeneratePDF = async () => {
+    // Solo delegar al modal - evita doble generación
+    console.log('Generación delegada al modal');
+  };
+
+  const handleClosePreview = () => {
+    setIsPreviewOpen(false);
+    setCurrentReportData(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto mt-24 px-4 pb-20">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg text-gray-600">Cargando datos de reportes...</div>
+        </div>
+        <BottomNavbar />
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="container mx-auto mt-24 px-4 pb-20">
@@ -150,28 +181,28 @@ export default function ReportsAdminPage() {
             <ReportButton 
               title="Reporte de Estudiantes"
               description={`${students.length} estudiantes registrados`}
-              onGenerate={() => handleGeneratePDF('students')}
+              onGenerate={() => handleShowPreview('students')}
               disabled={generatingPDF}
               color="blue"
             />
             <ReportButton 
               title="Reporte de Cursos"
               description={`${courses.length} cursos activos`}
-              onGenerate={() => handleGeneratePDF('courses')}
+              onGenerate={() => handleShowPreview('courses')}
               disabled={generatingPDF}
               color="green"
             />
             <ReportButton 
               title="Reporte de Profesores"
               description={`${teachers.length} profesores`}
-              onGenerate={() => handleGeneratePDF('teachers')}
+              onGenerate={() => handleShowPreview('teachers')}
               disabled={generatingPDF}
               color="purple"
             />
             <ReportButton 
               title="Reporte General"
               description="Estadísticas completas"
-              onGenerate={() => handleGeneratePDF('general')}
+              onGenerate={() => handleShowPreview('general')}
               disabled={generatingPDF}
               color="orange"
             />
@@ -204,12 +235,22 @@ export default function ReportsAdminPage() {
         )}
       </div>
 
+      {/* Modal de Vista Previa */}
+      <ReportPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={handleClosePreview}
+        reportType={currentReportType}
+        data={currentReportData}
+        generatingPDF={generatingPDF}
+        onGeneratePDF={handleGeneratePDF}
+      />
+
       <BottomNavbar />
     </>
   );
 }
 
-// Componente para botones de reporte (se mantiene igual)
+// Componente para botones de reporte
 function ReportButton({ 
   title, 
   description, 
@@ -239,7 +280,7 @@ function ReportButton({
       <div className="font-semibold mb-1">{title}</div>
       <div className="text-sm opacity-90">{description}</div>
       {disabled && (
-        <div className="text-xs mt-2">Generando PDF...</div>
+        <div className="text-xs mt-2">Cargando vista previa...</div>
       )}
     </button>
   );
