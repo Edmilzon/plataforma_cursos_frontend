@@ -1,6 +1,6 @@
 // services/adminService.ts
 const API_BASE_URL = 'http://localhost:5000/admin';
-import { userService } from './userService';
+import { userService, ApiUser } from './userService';
 
 export interface Role {
   id_rol: number;
@@ -16,18 +16,13 @@ export interface Permission {
   descripcion: string;
 }
 
-export interface User {
-  id_usuario: number;
-  nombre: string;
-  apellido: string;
-  correo: string;
-  edad: number;
-  rol: string;
-  fecha_registro?: string;
+export interface User extends ApiUser {
+  roles?: Role[];
 }
 
 export const adminService = {
-  // OBTENER ROLES EXISTENTES - Este endpoint SÍ funciona
+  // ==================== ROLES ====================
+
   async getRoles(): Promise<Role[]> {
     try {
       console.log('🔍 Obteniendo roles...');
@@ -38,15 +33,96 @@ export const adminService = {
       }
       
       const roles = await response.json();
-      console.log(' Roles obtenidos:', roles);
+      console.log('✅ Roles obtenidos:', roles);
       return roles;
     } catch (error) {
-      console.error(' Error obteniendo roles:', error);
+      console.error('❌ Error obteniendo roles:', error);
       throw error;
     }
   },
 
-  // OBTENER PERMISOS DISPONIBLES - Este endpoint SÍ funciona
+  async getRoleById(roleId: number): Promise<Role> {
+    try {
+      console.log(`🔍 Obteniendo rol ${roleId}...`);
+      const response = await fetch(`${API_BASE_URL}/roles/${roleId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudo obtener el rol`);
+      }
+      
+      const role = await response.json();
+      console.log('✅ Rol obtenido:', role);
+      return role;
+    } catch (error) {
+      console.error('❌ Error obteniendo rol:', error);
+      throw error;
+    }
+  },
+
+  async createRole(nombre: string, descripcion: string, iconoUrl?: string, adminId: number = 1): Promise<Role> {
+    try {
+      console.log(`📝 Creando rol: ${nombre}`);
+      const response = await fetch(`${API_BASE_URL}/roles?adminId=${adminId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, descripcion, icono_url: iconoUrl }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudo crear el rol`);
+      }
+      
+      const role = await response.json();
+      console.log('✅ Rol creado:', role);
+      return role;
+    } catch (error) {
+      console.error('❌ Error creando rol:', error);
+      throw error;
+    }
+  },
+
+  async updateRole(roleId: number, nombre: string, descripcion: string, iconoUrl?: string): Promise<Role> {
+    try {
+      console.log(`✏️ Actualizando rol ${roleId}...`);
+      const response = await fetch(`${API_BASE_URL}/roles/${roleId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, descripcion, icono_url: iconoUrl }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudo actualizar el rol`);
+      }
+      
+      const role = await response.json();
+      console.log('✅ Rol actualizado:', role);
+      return role;
+    } catch (error) {
+      console.error('❌ Error actualizando rol:', error);
+      throw error;
+    }
+  },
+
+  async deleteRole(roleId: number, adminId: number = 1): Promise<void> {
+    try {
+      console.log(`🗑️ Eliminando rol ${roleId}...`);
+      const response = await fetch(`${API_BASE_URL}/roles/${roleId}?adminId=${adminId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudo eliminar el rol`);
+      }
+      
+      console.log('✅ Rol eliminado correctamente');
+    } catch (error) {
+      console.error('❌ Error eliminando rol:', error);
+      throw error;
+    }
+  },
+
+  // ==================== PERMISOS ====================
+
   async getPermissions(): Promise<Permission[]> {
     try {
       console.log('🔍 Obteniendo permisos...');
@@ -57,18 +133,35 @@ export const adminService = {
       }
       
       const permissions = await response.json();
-      console.log(' Permisos obtenidos:', permissions);
+      console.log('✅ Permisos obtenidos:', permissions);
       return permissions;
     } catch (error) {
-      console.error(' Error obteniendo permisos:', error);
+      console.error('❌ Error obteniendo permisos:', error);
       throw error;
     }
   },
 
-  // ASIGNAR PERMISOS A UN ROL - Este endpoint SÍ funciona
-  async assignPermissionsToRole(roleId: number, permissionIds: number[]) {
+  async getPermissionsOfRole(roleId: number): Promise<Permission[]> {
     try {
-      console.log(`🔍 Asignando permisos al rol ${roleId}:`, permissionIds);
+      console.log(`🔍 Obteniendo permisos del rol ${roleId}...`);
+      const response = await fetch(`${API_BASE_URL}/roles/${roleId}/permisos`);
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudieron obtener los permisos`);
+      }
+      
+      const permissions = await response.json();
+      console.log('✅ Permisos del rol obtenidos:', permissions);
+      return permissions;
+    } catch (error) {
+      console.error('❌ Error obteniendo permisos del rol:', error);
+      throw error;
+    }
+  },
+
+  async assignPermissionsToRole(roleId: number, permissionIds: number[]): Promise<Role> {
+    try {
+      console.log(`📌 Asignando permisos al rol ${roleId}:`, permissionIds);
       
       const response = await fetch(`${API_BASE_URL}/roles/${roleId}/permisos`, {
         method: 'POST',
@@ -77,81 +170,188 @@ export const adminService = {
       });
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(`Error ${response.status}: No se pudieron asignar los permisos`);
       }
       
       const result = await response.json();
-      console.log(' Permisos asignados:', result);
+      console.log('✅ Permisos asignados:', result);
       return result;
     } catch (error) {
-      console.error(' Error asignando permisos:', error);
+      console.error('❌ Error asignando permisos:', error);
       throw error;
     }
   },
 
-  // OBTENER TODOS LOS USUARIOS - Usando el nuevo método
+  // ==================== USUARIOS ====================
+
   async getAllUsers(): Promise<User[]> {
     try {
-      console.log(' Obteniendo todos los usuarios...');
+      console.log('👥 Obteniendo todos los usuarios...');
       
-      // Usar el nuevo método getAllUsers que usa el endpoint /user
+      try {
+        const response = await fetch(`${API_BASE_URL}/usuarios`);
+        
+        if (response.ok) {
+          const users = await response.json();
+          console.log(`✅ Usuarios obtenidos (admin endpoint): ${users.length}`);
+          return users;
+        }
+      } catch (adminError) {
+        console.log('⚠️ Endpoint admin/usuarios no disponible, intentando user endpoint...');
+      }
+
       const users = await userService.getAllUsers();
-      console.log(` Usuarios obtenidos: ${users.length}`);
-      
+      console.log(`✅ Usuarios obtenidos (user endpoint): ${users.length}`);
       return users;
       
     } catch (error) {
-      console.error(' Error obteniendo usuarios:', error);
-      
-      // Si falla getAllUsers, intentar con getUsersByRole
-      try {
-        console.log(' Intentando obtener usuarios por roles individuales...');
-        
-        const [teachers, students, admins] = await Promise.all([
-          userService.getUsersByRole('Docente').catch(() => []),
-          userService.getUsersByRole('Estudiante').catch(() => []),
-          userService.getUsersByRole('Administrador').catch(() => [])
-        ]);
-        
-        const allUsers = [...teachers, ...students, ...admins];
-        console.log(` Usuarios obtenidos por roles: ${allUsers.length}`);
-        return allUsers;
-        
-      } catch (fallbackError) {
-        console.error(' Todos los métodos fallaron:', fallbackError);
-        throw new Error('No se pudieron obtener los usuarios. Verifica que los endpoints /user y /user/rol estén funcionando.');
-      }
+      console.error('❌ Error obteniendo usuarios:', error);
+      throw error;
     }
   },
 
-  // CAMBIAR ROL DE USUARIO - Necesitas implementar este endpoint
-  async updateUserRole(userId: number, newRole: string) {
+  async getUserById(userId: number): Promise<User> {
+    try {
+      console.log(`🔍 Obteniendo usuario ${userId}...`);
+      const response = await fetch(`${API_BASE_URL}/usuarios/${userId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudo obtener el usuario`);
+      }
+      
+      const user = await response.json();
+      console.log('✅ Usuario obtenido:', user);
+      return user;
+    } catch (error) {
+      console.error('❌ Error obteniendo usuario:', error);
+      throw error;
+    }
+  },
+
+  async createUser(
+    nombre: string,
+    apellido: string,
+    correo: string,
+    edad: number,
+    password: string,
+    adminId: number = 1
+  ): Promise<User> {
+    try {
+      console.log(`📝 Creando usuario: ${nombre} ${apellido}`);
+      const response = await fetch(`${API_BASE_URL}/usuarios?adminId=${adminId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, apellido, correo, edad, password }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudo crear el usuario`);
+      }
+      
+      const user = await response.json();
+      console.log('✅ Usuario creado:', user);
+      return user;
+    } catch (error) {
+      console.error('❌ Error creando usuario:', error);
+      throw error;
+    }
+  },
+
+  async updateUser(userId: number, userData: Partial<User>): Promise<User> {
+    try {
+      console.log(`✏️ Actualizando usuario ${userId}...`);
+      const response = await fetch(`${API_BASE_URL}/usuarios/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudo actualizar el usuario`);
+      }
+      
+      const user = await response.json();
+      console.log('✅ Usuario actualizado:', user);
+      return user;
+    } catch (error) {
+      console.error('❌ Error actualizando usuario:', error);
+      throw error;
+    }
+  },
+
+  async deleteUser(userId: number, adminId: number = 1): Promise<void> {
+    try {
+      console.log(`🗑️ Eliminando usuario ${userId}...`);
+      const response = await fetch(`${API_BASE_URL}/usuarios/${userId}?adminId=${adminId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudo eliminar el usuario`);
+      }
+      
+      console.log('✅ Usuario eliminado correctamente');
+    } catch (error) {
+      console.error('❌ Error eliminando usuario:', error);
+      throw error;
+    }
+  },
+
+  async assignRolesToUser(userId: number, roleIds: number[], adminId: number = 1): Promise<User> {
+    try {
+      console.log(`👤 Asignando roles al usuario ${userId}:`, roleIds);
+      
+      const response = await fetch(`${API_BASE_URL}/usuarios/${userId}/roles?adminId=${adminId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roleIds }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudieron asignar los roles`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Roles asignados:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error asignando roles:', error);
+      throw error;
+    }
+  },
+
+  async updateUserRole(userId: number, newRole: string): Promise<User> {
     try {
       console.log(`🔄 Cambiando rol del usuario ${userId} a ${newRole}`);
       
-      // Este endpoint necesitas implementarlo en tu backend
-      const response = await fetch(`http://localhost:5000/admin/users/${userId}/role`, {
-        method: 'PATCH',
+      // Obtener el ID del rol por nombre
+      const roleId = await this.getRoleIdByName(newRole);
+      
+      const response = await fetch(`${API_BASE_URL}/usuarios/${userId}/roles?adminId=1`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole }),
+        body: JSON.stringify({ roleIds: [roleId] }),
       });
       
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Rol actualizado:', result);
-        return result;
-      } else {
-        // Si el endpoint no existe, simular el cambio
-        console.log(` Endpoint no implementado, simulando cambio de rol`);
-        return { 
-          message: `Rol cambiado a ${newRole} (simulado - implementa el endpoint /admin/users/${userId}/role)`,
-          simulated: true 
-        };
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudo cambiar el rol`);
       }
       
+      const result = await response.json();
+      console.log('✅ Rol actualizado:', result);
+      return result;
     } catch (error) {
-      console.error(' Error cambiando rol:', error);
-      throw new Error('Error al cambiar el rol del usuario');
+      console.error('❌ Error cambiando rol:', error);
+      throw error;
     }
+  },
+
+  // ==================== HELPERS ====================
+
+  async getRoleIdByName(roleName: string): Promise<number> {
+    const roles = await this.getRoles();
+    const role = roles.find(r => r.nombre.toLowerCase() === roleName.toLowerCase());
+    if (!role) throw new Error(`Rol "${roleName}" no encontrado`);
+    return role.id_rol;
   }
 };

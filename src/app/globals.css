@@ -1,1 +1,18 @@
 @import "tailwindcss";
+/* En tu archivo global CSS */
+#report-preview-content {
+  background: white !important;
+  color: black !important;
+  font-family: Arial, sans-serif !important;
+}
+
+#report-preview-content * {
+  background: white !important;
+  color: black !important;
+  border-color: #666 !important;
+}
+
+#report-preview-content canvas {
+  background: white !important;
+  border: 1px solid #666 !important;
+}
