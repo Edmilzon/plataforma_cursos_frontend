@@ -10,6 +10,14 @@ export function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
 
+  const getHomeRoute = () => {
+    if (!user) return null;
+    if (user.rol === 'Administrador') return '/home-admin';
+    if (user.rol === 'Docente') return '/home-docente';
+    return null; // Para otros roles o si no hay rol
+  };
+
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 py-4">
@@ -50,13 +58,15 @@ export function Navbar() {
 
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg py-1 z-50">
-                    {user?.rol === 'Docente' && (
+                    {getHomeRoute() && (
                       <Link
-                        href="/home-docente"
+                        href={getHomeRoute()!}
                         className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
                       >
-                        Menú de Docente
+                         {getHomeRoute() === '/home-admin' ? 'Menú de Administrador' : 'Menú de Docente'}
                       </Link>
+
+
                     )}
                     <button
                       className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
