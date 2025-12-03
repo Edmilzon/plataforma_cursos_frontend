@@ -11,7 +11,9 @@ interface PaymentModalProps {
   courseName: string;
   price: number;
   onClose: () => void;
+  onPaymentSuccess?: () => void; // Nueva prop para manejar pago exitoso
 }
+
 
 export default function PaymentModal({
   courseId,
@@ -19,6 +21,7 @@ export default function PaymentModal({
   courseName,
   price,
   onClose,
+  onPaymentSuccess,
 }: PaymentModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -31,6 +34,13 @@ export default function PaymentModal({
     expiry: '',
     cvc: '',
   });
+  
+  const handleSuccessfulPayment = () => {
+    // Tu lógica de pago exitoso...
+    if (onPaymentSuccess) {
+      onPaymentSuccess();
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCardData({
@@ -62,7 +72,7 @@ export default function PaymentModal({
 
     alert(result.message || `¡Te has inscrito al curso ${courseName}!`);
     onClose();
-    router.push(`/my-courses/${courseId}`);
+    router.push(`/payment/success?courseId=${courseId}&id_usuario=${userId}`);
   } catch (err: any) {
     setError(err.message || 'Error al procesar la inscripción');
   } finally {
