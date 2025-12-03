@@ -13,14 +13,14 @@ interface CourseResponse {
   modalidad: string;
   imagen_portada_url: string;
   docente: {
-    id_usuario: number;
+    userId: number;
     nombre: string;
     apellido: string;
   };
 }
 
 interface UserResponse {
-  id_usuario: number;
+  userId: number;
   nombre: string;
   apellido: string;
   correo: string;
