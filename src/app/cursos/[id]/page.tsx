@@ -89,7 +89,7 @@ export default function CourseDetailPage() {
       {showPaymentModal && user && course && (
         <PaymentModal
           courseId={course.id_curso}
-          userId={user.id}
+          userId={user.id_usuario}
           token="" // Si no estás usando token, puedes dejar vacío
           courseName={course.titulo}
           price={course.precio}
