@@ -7,14 +7,12 @@ import { useRouter } from 'next/navigation';
 interface PaymentModalProps {
   courseId: number;
   userId: number;
-  token?: string; // opcional, no lo necesitamos ahora
+  token?: string;
   courseName: string;
   price: number;
   onClose: () => void;
-  onPaymentSuccess?: () => void; // Nueva prop para manejar pago exitoso
+  onPaymentSuccess?: () => void;
 }
-
-
 
 export default function PaymentModal({
   courseId,
@@ -28,7 +26,6 @@ export default function PaymentModal({
   const [error, setError] = useState('');
   const router = useRouter();
 
-  // Estado del formulario de tarjeta (simulado)
   const [cardData, setCardData] = useState({
     number: '',
     name: '',
@@ -36,13 +33,6 @@ export default function PaymentModal({
     cvc: '',
   });
   
-  const handleSuccessfulPayment = () => {
-    // Tu lógica de pago exitoso...
-    if (onPaymentSuccess) {
-      onPaymentSuccess();
-    }
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCardData({
       ...cardData,
@@ -51,36 +41,35 @@ export default function PaymentModal({
   };
 
   const handlePayment = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
+    e.preventDefault();
+    setError('');
 
-  console.log("ID recibido en modal:", courseId); // <-- aquí
+    console.log("ID recibido en modal:", courseId);
 
-  // Validación simple de tarjeta (simulación)
-  if (cardData.number.length < 16) {
-    setError('Número de tarjeta inválido');
-    return;
-  }
+    if (cardData.number.length < 16) {
+      setError('Número de tarjeta inválido');
+      return;
+    }
 
-  setIsLoading(true);
+    setIsLoading(true);
 
-  try {
-    const result = await enrollmentService.enrollInCourse(
-      courseId.toString(),
-      'Tarjeta',
-      0
-    );
+    try {
+      const result = await enrollmentService.enrollInCourse(
+        courseId.toString(),
+        'Tarjeta',
+        0
+      );
 
-    alert(result.message || `¡Te has inscrito al curso ${courseName}!`);
-    onClose();
-    router.push(`/payment/success?courseId=${courseId}&userId=${userId}`);
-  } catch (err: any) {
-    setError(err.message || 'Error al procesar la inscripción');
-  } finally {
-    setIsLoading(false);
-  }
-};
-
+      alert(result.message || `¡Te has inscrito al curso ${courseName}!`);
+      if (onPaymentSuccess) onPaymentSuccess();
+      onClose();
+      router.push(`/payment/success?courseId=${courseId}&userId=${userId}`);
+    } catch (err: any) {
+      setError(err.message || 'Error al procesar la inscripción');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div style={{
@@ -100,35 +89,46 @@ export default function PaymentModal({
         {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
 
         <form onSubmit={handlePayment}>
-          <div style={{ marginBottom: '10px' }}>
-            <label>Número de Tarjeta</label>
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px' }}>Número de Tarjeta</label>
             <input
               type="text"
               name="number"
               placeholder="0000 0000 0000 0000"
+              maxLength={19}
               value={cardData.number}
               onChange={handleInputChange}
               style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-            <input
-              type="text"
-              name="expiry"
-              placeholder="MM/YY"
-              style={{ flex: 1, padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
-              onChange={handleInputChange}
-              value={cardData.expiry}
-            />
-            <input
-              type="text"
-              name="cvc"
-              placeholder="CVC"
-              style={{ flex: 1, padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
-              onChange={handleInputChange}
-              value={cardData.cvc}
-            />
+          {/* Sección arreglada de Fecha y CVC */}
+          <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '5px' }}>Vencimiento</label>
+              <input
+                type="text"
+                name="expiry"
+                placeholder="MM/YY"
+                maxLength={5}
+                style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+                onChange={handleInputChange}
+                value={cardData.expiry}
+              />
+            </div>
+            
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '5px' }}>CVC</label>
+              <input
+                type="text"
+                name="cvc"
+                placeholder="000"
+                maxLength={4}
+                style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+                onChange={handleInputChange}
+                value={cardData.cvc}
+              />
+            </div>
           </div>
 
           <button
