@@ -16,12 +16,22 @@ interface Module {
   orden: number;
 }
 
+interface Docente {
+  id_usuario: number;
+  nombre: string;
+  apellido: string;
+}
+
 interface CourseDetails extends Course {
   duracion: number;
   imagen_portada_url: string;
   tipo_curso: {
     nombre: string;
   };
+
+  horario_clases?: string;
+  docente?: Docente;
+
 }
 
 export default function CourseDetailPage() {
@@ -152,6 +162,14 @@ export default function CourseDetailPage() {
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.415L11 11.586V6z" clipRule="evenodd" /></svg>
                       <span>Duración: {course.duracion} horas</span>
                     </div>
+
+                    {course.horario_clases && (
+                      <div className="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" /></svg>
+                        <span>Horario: {course.horario_clases}</span>
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-3">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm2 1v2h12V6H4zm0 4v6h12v-6H4z" clipRule="evenodd" /></svg>
                       <span>Modalidad: {course.modalidad}</span>
