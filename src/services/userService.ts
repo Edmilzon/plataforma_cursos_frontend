@@ -79,5 +79,37 @@ export const userService = {
     }
 
     return response.json();
+  },
+
+  /**
+   * Obtiene el saldo de puntos de un usuario y actualiza el localStorage.
+   * @param userId - El ID del usuario.
+   * @returns El saldo de puntos actualizado.
+   */
+  async updateUserPointsInStorage(userId: number): Promise<number | undefined> {
+    try {
+      console.log(`Actualizando saldo de puntos para el usuario ${userId}...`);
+      const response = await fetch(`${API_BASE_URL}/user/${userId}/saldo-punto`);
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudo obtener el saldo de puntos.`);
+      }
+
+      const data = await response.json();
+      const newPoints = data.saldo_punto;
+
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr) as ApiUser;
+        user.saldo_punto = newPoints;
+        localStorage.setItem('user', JSON.stringify(user));
+        console.log('Saldo de puntos actualizado en localStorage:', newPoints);
+      }
+
+      return newPoints;
+    } catch (error) {
+      console.error('Error actualizando el saldo de puntos:', error);
+      return undefined;
+    }
   }
 };
