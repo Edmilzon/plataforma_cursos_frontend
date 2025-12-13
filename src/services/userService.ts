@@ -92,81 +92,59 @@ export const userService = {
    * @param userId - El ID del usuario.
    * @returns El saldo de puntos actualizado.
    */
-  async updateUserPointsInStorage(userId: number): Promise<number | undefined> {
-    try {
-      console.log(`Actualizando saldo de puntos para el usuario ${userId}...`);
-      const response = await fetch(`${API_BASE_URL}/user/${userId}/saldo-punto`);
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: No se pudo obtener el saldo de puntos.`);
-      }
-
-      const data = await response.json();
-      const newPoints = data.saldo_punto;
-
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr) as ApiUser;
-        user.saldo_punto = newPoints;
-        localStorage.setItem('user', JSON.stringify(user));
-        console.log('Saldo de puntos actualizado en localStorage:', newPoints);
-      }
-
-      return newPoints;
-    } catch (error) {
-      console.error('Error actualizando el saldo de puntos:', error);
-      return undefined;
-    }
-  },
-
   async updateProfile(userId: number, data: UpdateProfileData): Promise<ApiUser> {
-    try {
-      console.log(`🔄 Actualizando perfil para usuario ${userId}:`, data);
-      
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No se encontró token de autenticación');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/user/${userId}/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));
-        throw new Error(errorData.message || `Error ${response.status}: No se pudo actualizar el perfil`);
-      }
-
-      const updatedUser = await response.json();
-      console.log('Perfil actualizado:', updatedUser);
-      
-      // Actualizar localStorage
-      const currentUserStr = localStorage.getItem('user');
-      if (currentUserStr) {
-        const currentUser = JSON.parse(currentUserStr);
-        if (currentUser.id_usuario === userId) {
-          // Actualizar SOLO los campos que pueden cambiar
-          const mergedUser = { 
-            ...currentUser, 
-            nombre: data.nombre !== undefined ? data.nombre : currentUser.nombre,
-            apellido: data.apellido !== undefined ? data.apellido : currentUser.apellido,
-            edad: data.edad !== undefined ? data.edad : currentUser.edad
-            // Nota: No actualizamos password en localStorage por seguridad
-          };
-          localStorage.setItem('user', JSON.stringify(mergedUser));
-        }
-      }
-      
-      return updatedUser;
-      
-    } catch (error) {
-      console.error('Error en updateProfile:', error);
-      throw error;
+  try {
+    console.log(`🔄 Actualizando perfil para usuario ${userId}:`, data);
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No se encontró token de autenticación');
     }
+
+    const response = await fetch(`${API_BASE_URL}/user/${userId}/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));
+      throw new Error(errorData.message || `Error ${response.status}: No se pudo actualizar el perfil`);
+    }
+
+    const updatedUser = await response.json();
+    console.log('✅ Perfil actualizado desde backend:', updatedUser);
+    
+    // ¡IMPORTANTE! Actualizar localStorage con TODOS los datos del backend
+    const currentUserStr = localStorage.getItem('user');
+    if (currentUserStr) {
+      const currentUser = JSON.parse(currentUserStr);
+      if (currentUser.id_usuario === userId) {
+        // ¡USA updatedUser, NO data!
+        const mergedUser = { 
+          ...currentUser, 
+          ...updatedUser, // ← ¡ESTA LÍNEA ES CLAVE!
+        };
+        
+        // Si el backend no devuelve edad, mantener la actual
+        if (updatedUser.edad === undefined) {
+          console.log('⚠️ Backend no devolvió edad, manteniendo valor actual');
+          mergedUser.edad = currentUser.edad;
+        }
+        
+        localStorage.setItem('user', JSON.stringify(mergedUser));
+        console.log('💾 localStorage actualizado:', mergedUser);
+      }
+    }
+    
+    return updatedUser;
+    
+  } catch (error) {
+    console.error('❌ Error en updateProfile:', error);
+    throw error;
   }
+}
 };

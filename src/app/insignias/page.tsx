@@ -200,7 +200,7 @@ const EditProfileModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z- flex items-center justify-center bg-white bg-opacity-50 p-4">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-white bg-opacity-50 p-4">
       <div className="bg-white rounded-2xl w-full max-w-md animate-fade-in-up">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
@@ -386,7 +386,7 @@ export default function ProfilePage() {
     }
   }, [user]);
 
-  const handleUpdateProfile = async (updatedData: UpdateProfileData) => {
+  const handleUpdateProfile = async (updatedData: UpdateProfileData): Promise<void> => {
     if (!user?.id_usuario) throw new Error('Usuario no identificado');
     
     try {
@@ -395,8 +395,6 @@ export default function ProfilePage() {
       
       // Actualiza el estado local usando updateUser
       updateUser(updatedUser);
-      
-      return updatedUser;
     } catch (err: any) {
       console.error('Error al actualizar perfil:', err);
       throw err;
