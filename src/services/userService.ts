@@ -12,6 +12,12 @@ export interface ApiUser {
   avatar_url?: string;
   saldo_punto?: number;
 }
+export interface UpdateProfileData {
+  nombre?: string;
+  apellido?: string;  
+  edad?: number;
+  password?: string;
+}
 
 export const userService = {
   async getUsersByRole(role: 'Docente' | 'Estudiante' | 'Administrador'): Promise<ApiUser[]> {
@@ -110,6 +116,57 @@ export const userService = {
     } catch (error) {
       console.error('Error actualizando el saldo de puntos:', error);
       return undefined;
+    }
+  },
+
+  async updateProfile(userId: number, data: UpdateProfileData): Promise<ApiUser> {
+    try {
+      console.log(`🔄 Actualizando perfil para usuario ${userId}:`, data);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No se encontró token de autenticación');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/user/${userId}/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));
+        throw new Error(errorData.message || `Error ${response.status}: No se pudo actualizar el perfil`);
+      }
+
+      const updatedUser = await response.json();
+      console.log('Perfil actualizado:', updatedUser);
+      
+      // Actualizar localStorage
+      const currentUserStr = localStorage.getItem('user');
+      if (currentUserStr) {
+        const currentUser = JSON.parse(currentUserStr);
+        if (currentUser.id_usuario === userId) {
+          // Actualizar SOLO los campos que pueden cambiar
+          const mergedUser = { 
+            ...currentUser, 
+            nombre: data.nombre !== undefined ? data.nombre : currentUser.nombre,
+            apellido: data.apellido !== undefined ? data.apellido : currentUser.apellido,
+            edad: data.edad !== undefined ? data.edad : currentUser.edad
+            // Nota: No actualizamos password en localStorage por seguridad
+          };
+          localStorage.setItem('user', JSON.stringify(mergedUser));
+        }
+      }
+      
+      return updatedUser;
+      
+    } catch (error) {
+      console.error('Error en updateProfile:', error);
+      throw error;
     }
   }
 };
