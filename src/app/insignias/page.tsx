@@ -375,6 +375,17 @@ export default function ProfilePage() {
           setLoadingBadges(true);
           const userBadges = await badgeService.getUserBadges(user.id_usuario);
           setInsignias(userBadges);
+          try {
+            const puntosActualizados = await userService.updateUserPointsInStorage(user.id_usuario);
+            console.log('💰 Puntos iniciales cargados:', puntosActualizados);
+            
+            // Si los puntos son diferentes, actualizar el estado
+            if (puntosActualizados !== user.saldo_punto) {
+              updateUser({ saldo_punto: puntosActualizados });
+            }
+          } catch (pointsError) {
+            console.warn('⚠️ No se pudieron cargar puntos iniciales:', pointsError);
+          }
         } catch (err: any) {
           setError('No se pudieron cargar tus insignias. Inténtalo de nuevo más tarde.');
           console.error(err);
@@ -384,7 +395,8 @@ export default function ProfilePage() {
       };
       fetchInsignias();
     }
-  }, [user]);
+  }, [user?.id_usuario, updateUser]);
+
 
   const handleUpdateProfile = async (updatedData: UpdateProfileData): Promise<void> => {
     if (!user?.id_usuario) throw new Error('Usuario no identificado');
