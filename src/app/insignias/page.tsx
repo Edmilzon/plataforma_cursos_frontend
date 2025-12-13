@@ -377,14 +377,14 @@ export default function ProfilePage() {
           setInsignias(userBadges);
           try {
             const puntosActualizados = await userService.updateUserPointsInStorage(user.id_usuario);
-            console.log('💰 Puntos iniciales cargados:', puntosActualizados);
+            console.log(' Puntos iniciales cargados:', puntosActualizados);
             
             // Si los puntos son diferentes, actualizar el estado
             if (puntosActualizados !== user.saldo_punto) {
               updateUser({ saldo_punto: puntosActualizados });
             }
           } catch (pointsError) {
-            console.warn('⚠️ No se pudieron cargar puntos iniciales:', pointsError);
+            console.warn(' No se pudieron cargar puntos iniciales:', pointsError);
           }
         } catch (err: any) {
           setError('No se pudieron cargar tus insignias. Inténtalo de nuevo más tarde.');

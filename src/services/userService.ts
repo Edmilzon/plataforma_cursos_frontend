@@ -23,11 +23,11 @@ export interface UpdateProfileData {
 export const userService = {
   async getUsersByRole(role: 'Docente' | 'Estudiante' | 'Administrador'): Promise<ApiUser[]> {
     try {
-      console.log(`🔍 Obteniendo usuarios con rol: ${role}`);
+      console.log(` Obteniendo usuarios con rol: ${role}`);
       
       const response = await fetch(`${API_BASE_URL}/user/rol?rol=${role}`);
       
-      console.log(`📊 Response status: ${response.status} ${response.statusText}`);
+      console.log(` Response status: ${response.status} ${response.statusText}`);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -48,7 +48,7 @@ export const userService = {
 
   async getAllUsers(): Promise<ApiUser[]> {
     try {
-      console.log('🔍 Obteniendo todos los usuarios...');
+      console.log(' Obteniendo todos los usuarios...');
       
       const response = await fetch(`${API_BASE_URL}/user`);
       
@@ -57,19 +57,19 @@ export const userService = {
       }
 
       const users = await response.json();
-      console.log(`✅ Todos los usuarios obtenidos:`, users.length);
+      console.log(`Todos los usuarios obtenidos:`, users.length);
       
       return Array.isArray(users) ? users : [];
       
     } catch (error) {
-      console.error('❌ Error en getAllUsers:', error);
+      console.error(' Error en getAllUsers:', error);
       throw error;
     }
   },
 
   async getProfile(userId: number): Promise<ApiUser> {
     try {
-      console.log(`🔍 Obteniendo perfil del usuario ${userId}...`);
+      console.log(` Obteniendo perfil del usuario ${userId}...`);
       
       const token = localStorage.getItem('token');
       if (!token) {
@@ -88,12 +88,12 @@ export const userService = {
       }
 
       const userData = await response.json();
-      console.log('✅ Perfil obtenido:', userData);
+      console.log(' Perfil obtenido:', userData);
       
       return userData;
       
     } catch (error) {
-      console.error('❌ Error en getProfile:', error);
+      console.error(' Error en getProfile:', error);
       throw error;
     }
   },
@@ -105,7 +105,7 @@ export const userService = {
    */
   async updateUserPointsInStorage(userId: number): Promise<number> {
     try {
-      console.log(`🔄 Actualizando puntos para usuario ${userId}...`);
+      console.log(` Actualizando puntos para usuario ${userId}...`);
       
       // Usar el endpoint GET /user/{id} que SÍ existe
       const token = localStorage.getItem('token');
@@ -124,7 +124,7 @@ export const userService = {
       }
 
       const userData = await response.json();
-      console.log('📊 Datos completos del usuario:', userData);
+      console.log(' Datos completos del usuario:', userData);
       
       const puntos = userData.saldo_punto || 0;
       
@@ -134,12 +134,12 @@ export const userService = {
         const user = JSON.parse(userStr) as ApiUser;
         user.saldo_punto = puntos;
         localStorage.setItem('user', JSON.stringify(user));
-        console.log('💾 Puntos actualizados en localStorage:', puntos);
+        console.log(' Puntos actualizados en localStorage:', puntos);
       }
 
       return puntos;
     } catch (error) {
-      console.error('❌ Error actualizando el saldo de puntos:', error);
+      console.error(' Error actualizando el saldo de puntos:', error);
       throw error;
     }
   },
@@ -151,14 +151,14 @@ export const userService = {
     try {
       return await this.updateUserPointsInStorage(userId);
     } catch (error) {
-      console.error('❌ Error obteniendo puntos:', error);
+      console.error(' Error obteniendo puntos:', error);
       return 0;
     }
   },
 
   async updateProfile(userId: number, data: UpdateProfileData): Promise<ApiUser> {
     try {
-      console.log(`🔄 Actualizando perfil para usuario ${userId}:`, data);
+      console.log(` Actualizando perfil para usuario ${userId}:`, data);
       
       const token = localStorage.getItem('token');
       if (!token) {
@@ -181,15 +181,15 @@ export const userService = {
       }
 
       const updatedUser = await response.json();
-      console.log('✅ Perfil actualizado desde backend:', updatedUser);
+      console.log(' Perfil actualizado desde backend:', updatedUser);
       
       // 2. OBTENER PUNTOS ACTUALIZADOS DESPUÉS DEL CAMBIO
       let puntosActualizados = updatedUser.saldo_punto || 0;
       try {
         puntosActualizados = await this.updateUserPointsInStorage(userId);
-        console.log('💰 Puntos obtenidos después de actualizar:', puntosActualizados);
+        console.log(' Puntos obtenidos después de actualizar:', puntosActualizados);
       } catch (pointsError) {
-        console.warn('⚠️ No se pudieron obtener puntos:', pointsError);
+        console.warn(' No se pudieron obtener puntos:', pointsError);
       }
       
       // 3. Actualizar localStorage con TODOS los datos actualizados
@@ -207,7 +207,7 @@ export const userService = {
           };
           
           localStorage.setItem('user', JSON.stringify(mergedUser));
-          console.log('💾 localStorage actualizado:', mergedUser);
+          console.log(' localStorage actualizado:', mergedUser);
         }
       }
       
@@ -218,7 +218,7 @@ export const userService = {
       };
       
     } catch (error) {
-      console.error('❌ Error en updateProfile:', error);
+      console.error(' Error en updateProfile:', error);
       throw error;
     }
   },
@@ -250,11 +250,11 @@ export const userService = {
         }
       }
       
-      console.log('✅ Datos refrescados:', userProfile);
+      console.log('Datos refrescados:', userProfile);
       return userProfile;
       
     } catch (error) {
-      console.error('❌ Error refrescando datos:', error);
+      console.error(' Error refrescando datos:', error);
       throw error;
     }
   }
