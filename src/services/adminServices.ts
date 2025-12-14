@@ -18,6 +18,7 @@ export interface Permission {
 
 export interface User extends ApiUser {
   roles?: Role[];
+  fecha_registro?: string;
 }
 
 export const adminService = {
@@ -29,12 +30,18 @@ export const adminService = {
       const response = await fetch(`${API_BASE_URL}/roles`);
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText || response.statusText}`);
       }
       
       const roles = await response.json();
-      console.log('✅ Roles obtenidos:', roles);
-      return roles;
+      console.log('✅ Roles obtenidos:', roles.length, 'roles');
+      
+      // Asegurarse de que los roles tengan el array permisos incluso si está vacío
+      return roles.map((role: any) => ({
+        ...role,
+        permisos: role.permisos || []
+      }));
     } catch (error) {
       console.error('❌ Error obteniendo roles:', error);
       throw error;
@@ -47,12 +54,17 @@ export const adminService = {
       const response = await fetch(`${API_BASE_URL}/roles/${roleId}`);
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: No se pudo obtener el rol`);
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText || 'No se pudo obtener el rol'}`);
       }
       
       const role = await response.json();
       console.log('✅ Rol obtenido:', role);
-      return role;
+      
+      return {
+        ...role,
+        permisos: role.permisos || []
+      };
     } catch (error) {
       console.error('❌ Error obteniendo rol:', error);
       throw error;
@@ -69,7 +81,8 @@ export const adminService = {
       });
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: No se pudo crear el rol`);
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText || 'No se pudo crear el rol'}`);
       }
       
       const role = await response.json();
@@ -91,7 +104,8 @@ export const adminService = {
       });
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: No se pudo actualizar el rol`);
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText || 'No se pudo actualizar el rol'}`);
       }
       
       const role = await response.json();
@@ -111,7 +125,8 @@ export const adminService = {
       });
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: No se pudo eliminar el rol`);
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText || 'No se pudo eliminar el rol'}`);
       }
       
       console.log('✅ Rol eliminado correctamente');
@@ -129,11 +144,12 @@ export const adminService = {
       const response = await fetch(`${API_BASE_URL}/permisos`);
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText || response.statusText}`);
       }
       
       const permissions = await response.json();
-      console.log('✅ Permisos obtenidos:', permissions);
+      console.log('✅ Permisos obtenidos:', permissions.length, 'permisos');
       return permissions;
     } catch (error) {
       console.error('❌ Error obteniendo permisos:', error);
@@ -147,11 +163,12 @@ export const adminService = {
       const response = await fetch(`${API_BASE_URL}/roles/${roleId}/permisos`);
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: No se pudieron obtener los permisos`);
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText || 'No se pudieron obtener los permisos'}`);
       }
       
       const permissions = await response.json();
-      console.log('✅ Permisos del rol obtenidos:', permissions);
+      console.log('✅ Permisos del rol obtenidos:', permissions.length, 'permisos');
       return permissions;
     } catch (error) {
       console.error('❌ Error obteniendo permisos del rol:', error);
@@ -170,12 +187,17 @@ export const adminService = {
       });
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: No se pudieron asignar los permisos`);
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText || 'No se pudieron asignar los permisos'}`);
       }
       
       const result = await response.json();
       console.log('✅ Permisos asignados:', result);
-      return result;
+      
+      return {
+        ...result,
+        permisos: result.permisos || []
+      };
     } catch (error) {
       console.error('❌ Error asignando permisos:', error);
       throw error;
@@ -193,16 +215,27 @@ export const adminService = {
         
         if (response.ok) {
           const users = await response.json();
-          console.log(`✅ Usuarios obtenidos (admin endpoint): ${users.length}`);
-          return users;
+          console.log(`✅ Usuarios obtenidos (admin endpoint): ${users.length} usuarios`);
+          
+          return users.map((user: any) => ({
+            ...user,
+            roles: user.roles || [],
+            fecha_registro: user.fecha_registro || user.fechaRegistro || null
+          }));
+        } else {
+          console.log('⚠️ Endpoint admin/usuarios falló, intentando user endpoint...');
         }
       } catch (adminError) {
-        console.log('⚠️ Endpoint admin/usuarios no disponible, intentando user endpoint...');
+        console.log('⚠️ Endpoint admin/usuarios no disponible, intentando user endpoint...', adminError);
       }
 
       const users = await userService.getAllUsers();
-      console.log(`✅ Usuarios obtenidos (user endpoint): ${users.length}`);
-      return users;
+      console.log(`✅ Usuarios obtenidos (user endpoint): ${users.length} usuarios`);
+      
+      return users.map((user: any) => ({
+        ...user,
+        roles: user.roles || []
+      }));
       
     } catch (error) {
       console.error('❌ Error obteniendo usuarios:', error);
@@ -216,12 +249,18 @@ export const adminService = {
       const response = await fetch(`${API_BASE_URL}/usuarios/${userId}`);
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: No se pudo obtener el usuario`);
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText || 'No se pudo obtener el usuario'}`);
       }
       
       const user = await response.json();
       console.log('✅ Usuario obtenido:', user);
-      return user;
+      
+      return {
+        ...user,
+        roles: user.roles || [],
+        fecha_registro: user.fecha_registro || user.fechaRegistro || null
+      };
     } catch (error) {
       console.error('❌ Error obteniendo usuario:', error);
       throw error;
@@ -234,23 +273,44 @@ export const adminService = {
     correo: string,
     edad: number,
     password: string,
+    roleIds?: number[],
     adminId: number = 1
   ): Promise<User> {
     try {
-      console.log(`📝 Creando usuario: ${nombre} ${apellido}`);
+      console.log(`📝 Creando usuario: ${nombre} ${apellido}`, roleIds ? `con roles: ${roleIds}` : 'sin roles');
+      
+      const requestBody: any = { 
+        nombre, 
+        apellido, 
+        correo, 
+        edad, 
+        password 
+      };
+      
+      // Solo agregar roleIds si se proporcionan y no está vacío
+      if (roleIds && roleIds.length > 0) {
+        requestBody.roleIds = roleIds;
+      }
+      
       const response = await fetch(`${API_BASE_URL}/usuarios?adminId=${adminId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, apellido, correo, edad, password }),
+        body: JSON.stringify(requestBody),
       });
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: No se pudo crear el usuario`);
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
+        throw new Error(`Error ${response.status}: ${errorText || 'No se pudo crear el usuario'}`);
       }
       
       const user = await response.json();
       console.log('✅ Usuario creado:', user);
-      return user;
+      
+      return {
+        ...user,
+        roles: user.roles || []
+      };
     } catch (error) {
       console.error('❌ Error creando usuario:', error);
       throw error;
@@ -267,12 +327,17 @@ export const adminService = {
       });
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: No se pudo actualizar el usuario`);
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText || 'No se pudo actualizar el usuario'}`);
       }
       
       const user = await response.json();
       console.log('✅ Usuario actualizado:', user);
-      return user;
+      
+      return {
+        ...user,
+        roles: user.roles || []
+      };
     } catch (error) {
       console.error('❌ Error actualizando usuario:', error);
       throw error;
@@ -287,7 +352,8 @@ export const adminService = {
       });
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: No se pudo eliminar el usuario`);
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText || 'No se pudo eliminar el usuario'}`);
       }
       
       console.log('✅ Usuario eliminado correctamente');
@@ -308,12 +374,17 @@ export const adminService = {
       });
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: No se pudieron asignar los roles`);
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText || 'No se pudieron asignar los roles'}`);
       }
       
       const result = await response.json();
       console.log('✅ Roles asignados:', result);
-      return result;
+      
+      return {
+        ...result,
+        roles: result.roles || []
+      };
     } catch (error) {
       console.error('❌ Error asignando roles:', error);
       throw error;
@@ -334,12 +405,17 @@ export const adminService = {
       });
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: No se pudo cambiar el rol`);
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText || 'No se pudo cambiar el rol'}`);
       }
       
       const result = await response.json();
       console.log('✅ Rol actualizado:', result);
-      return result;
+      
+      return {
+        ...result,
+        roles: result.roles || []
+      };
     } catch (error) {
       console.error('❌ Error cambiando rol:', error);
       throw error;
@@ -349,9 +425,39 @@ export const adminService = {
   // ==================== HELPERS ====================
 
   async getRoleIdByName(roleName: string): Promise<number> {
-    const roles = await this.getRoles();
-    const role = roles.find(r => r.nombre.toLowerCase() === roleName.toLowerCase());
-    if (!role) throw new Error(`Rol "${roleName}" no encontrado`);
-    return role.id_rol;
+    try {
+      const roles = await this.getRoles();
+      const role = roles.find(r => r.nombre.toLowerCase() === roleName.toLowerCase());
+      if (!role) throw new Error(`Rol "${roleName}" no encontrado`);
+      return role.id_rol;
+    } catch (error) {
+      console.error('❌ Error obteniendo ID del rol:', error);
+      throw error;
+    }
+  },
+
+  // ==================== VALIDACIÓN ====================
+
+  validatePassword(password: string): { isValid: boolean; message?: string } {
+    if (password.length < 6) {
+      return { 
+        isValid: false, 
+        message: 'La contraseña debe tener al menos 6 caracteres' 
+      };
+    }
+    
+    return { isValid: true };
+  },
+
+  validateEmail(email: string): { isValid: boolean; message?: string } {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return { 
+        isValid: false, 
+        message: 'El correo electrónico no es válido' 
+      };
+    }
+    
+    return { isValid: true };
   }
 };

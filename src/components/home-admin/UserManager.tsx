@@ -6,7 +6,14 @@ import { User, Role } from '@/services/adminServices';
 interface UserManagerProps {
   users: User[];
   roles: Role[];
-  onCreateUser: (nombre: string, apellido: string, correo: string, edad: number, password: string) => Promise<User>;
+  onCreateUser: (
+    nombre: string, 
+    apellido: string, 
+    correo: string, 
+    edad: number, 
+    password: string,
+    roleIds?: number[]
+  ) => Promise<User>;
   onDeleteUser: (userId: number) => Promise<void>;
   onAssignRoles: (userId: number, roleIds: number[]) => Promise<User>;
   onRefresh: () => Promise<void>;
@@ -31,10 +38,35 @@ export const UserManager: React.FC<UserManagerProps> = ({
     edad: '',
     password: '',
   });
+  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Función para formatear la fecha de registro
+  const formatFechaRegistro = (fechaString: any) => {
+    if (!fechaString) return 'Fecha no disponible';
+    
+    try {
+      // Si es un string, intentar parsearlo
+      const fecha = new Date(fechaString);
+      
+      // Verificar si la fecha es válida
+      if (isNaN(fecha.getTime())) {
+        return 'Fecha inválida';
+      }
+      
+      return fecha.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (err) {
+      console.warn('Error al formatear fecha:', fechaString, err);
+      return 'Fecha no disponible';
+    }
+  };
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,16 +74,24 @@ export const UserManager: React.FC<UserManagerProps> = ({
     setError(null);
 
     try {
-      console.log('📝 Iniciando creación de usuario:', formData);
+      console.log(' Iniciando creación de usuario:', formData, 'Roles:', selectedRoleIds);
+      
+      if (formData.password.length < 6) {
+        throw new Error('La contraseña debe tener al menos 6 caracteres');
+      }
+
       await onCreateUser(
         formData.nombre,
         formData.apellido,
         formData.correo,
         parseInt(formData.edad),
-        formData.password
+        formData.password,
+        selectedRoleIds
       );
+      
       console.log(' Usuario creado exitosamente');
       setFormData({ nombre: '', apellido: '', correo: '', edad: '', password: '' });
+      setSelectedRoleIds([]);
       setShowCreateForm(false);
       setSuccess('Usuario creado exitosamente');
       setTimeout(() => setSuccess(null), 3000);
@@ -72,7 +112,7 @@ export const UserManager: React.FC<UserManagerProps> = ({
     setError(null);
 
     try {
-      console.log('🗑️ Eliminando usuario:', userId);
+      console.log(' Eliminando usuario:', userId);
       await onDeleteUser(userId);
       console.log(' Usuario eliminado exitosamente');
       setSuccess('Usuario eliminado exitosamente');
@@ -102,8 +142,8 @@ export const UserManager: React.FC<UserManagerProps> = ({
   };
 
   const handleSaveRoles = async () => {
-    if (!selectedUser || selectedRoles.length === 0) {
-      setError('Debes seleccionar al menos un rol');
+    if (!selectedUser) {
+      setError('No hay usuario seleccionado');
       return;
     }
 
@@ -125,6 +165,14 @@ export const UserManager: React.FC<UserManagerProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleToggleCreateRole = (roleId: number) => {
+    setSelectedRoleIds(prev =>
+      prev.includes(roleId)
+        ? prev.filter(id => id !== roleId)
+        : [...prev, roleId]
+    );
   };
 
   const filteredUsers = users.filter(user =>
@@ -166,58 +214,75 @@ export const UserManager: React.FC<UserManagerProps> = ({
       {showCreateForm && (
         <div className="bg-white border border-gray-300 rounded-lg p-6">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">Nuevo Usuario</h3>
-          <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-              <input
-                type="text"
-                value={formData.nombre}
-                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                placeholder="Juan"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                required
-              />
+          <form onSubmit={handleCreateUser} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.nombre}
+                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  placeholder="Juan"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Apellido <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.apellido}
+                  onChange={(e) => setFormData({ ...formData, apellido: e.target.value })}
+                  placeholder="Pérez"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Correo <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  value={formData.correo}
+                  onChange={(e) => setFormData({ ...formData, correo: e.target.value })}
+                  placeholder="juan@example.com"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Edad <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={formData.edad}
+                  onChange={(e) => setFormData({ ...formData, edad: e.target.value })}
+                  placeholder="25"
+                  min="18"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  required
+                  disabled={loading}
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
-              <input
-                type="text"
-                value={formData.apellido}
-                onChange={(e) => setFormData({ ...formData, apellido: e.target.value })}
-                placeholder="Pérez"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Correo</label>
-              <input
-                type="email"
-                value={formData.correo}
-                onChange={(e) => setFormData({ ...formData, correo: e.target.value })}
-                placeholder="juan@example.com"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Edad</label>
-              <input
-                type="number"
-                value={formData.edad}
-                onChange={(e) => setFormData({ ...formData, edad: e.target.value })}
-                placeholder="25"
-                min="18"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                required
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Contraseña <span className="text-red-500">*</span>
+                <span className="text-xs text-gray-500 ml-2">(mínimo 6 caracteres)</span>
+              </label>
               <input
                 type="password"
                 value={formData.password}
@@ -225,21 +290,99 @@ export const UserManager: React.FC<UserManagerProps> = ({
                 placeholder="••••••••"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                 required
+                minLength={6}
+                disabled={loading}
               />
             </div>
 
-            <div className="md:col-span-2 flex space-x-3">
+            {/* Selección de Roles */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Asignar Roles (opcional)
+              </label>
+              {roles.length === 0 ? (
+                <div className="border border-gray-300 rounded-lg p-4 text-center">
+                  <p className="text-gray-500 text-sm">
+                    No hay roles disponibles. Crea roles primero.
+                  </p>
+                </div>
+              ) : (
+                <div className="border border-gray-300 rounded-lg p-3 max-h-40 overflow-y-auto">
+                  <div className="space-y-2">
+                    {roles.map((role) => (
+                      <label 
+                        key={role.id_rol} 
+                        className={`flex items-start space-x-3 p-2 rounded cursor-pointer transition-colors ${
+                          selectedRoleIds.includes(role.id_rol) 
+                            ? 'bg-blue-50 border border-blue-200' 
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedRoleIds.includes(role.id_rol)}
+                          onChange={() => handleToggleCreateRole(role.id_rol)}
+                          className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                          disabled={loading}
+                        />
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-800">{role.nombre}</span>
+                          <p className="text-xs text-gray-600 truncate">{role.descripcion}</p>
+                          {role.permisos && role.permisos.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {role.permisos.slice(0, 3).map((permiso) => (
+                                <span 
+                                  key={permiso.id_permiso} 
+                                  className="text-xs bg-gray-100 text-gray-600 px-1 py-0.5 rounded"
+                                >
+                                  {permiso.nombre}
+                                </span>
+                              ))}
+                              {role.permisos.length > 3 && (
+                                <span className="text-xs text-gray-500">
+                                  +{role.permisos.length - 3} más
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                {selectedRoleIds.length} rol(es) seleccionado(s)
+              </p>
+            </div>
+
+            <div className="flex space-x-3 pt-2">
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors"
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors flex items-center space-x-2"
               >
-                {loading ? 'Creando...' : 'Crear Usuario'}
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Creando...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>✓</span>
+                    <span>Crear Usuario</span>
+                  </>
+                )}
               </button>
               <button
                 type="button"
-                onClick={() => setShowCreateForm(false)}
-                className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
+                onClick={() => {
+                  setShowCreateForm(false);
+                  setSelectedRoleIds([]);
+                  setError(null);
+                }}
+                className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={loading}
               >
                 Cancelar
               </button>
@@ -250,55 +393,110 @@ export const UserManager: React.FC<UserManagerProps> = ({
 
       {/* Búsqueda */}
       <div className="bg-white rounded-lg p-4 border border-gray-200">
-        <input
-          type="text"
-          placeholder="Buscar por nombre o correo..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <div className="flex items-center space-x-2">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              placeholder="Buscar por nombre o correo..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+              🔍
+            </div>
+          </div>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          {filteredUsers.length} de {users.length} usuarios encontrados
+        </p>
       </div>
 
       {/* Lista de Usuarios */}
       <div className="space-y-3">
         {filteredUsers.map((user) => (
-          <div key={user.id_usuario} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
+          <div 
+            key={user.id_usuario} 
+            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-start justify-between">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-800">
-                  {user.nombre} {user.apellido}
-                </h3>
-                <p className="text-sm text-gray-600">{user.correo}</p>
-                <p className="text-xs text-gray-500 mt-1">Edad: {user.edad} años</p>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {user.roles && user.roles.length > 0 ? (
-                    user.roles.map((role) => (
-                      <span
-                        key={role.id_rol}
-                        className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full"
-                      >
-                        {role.nombre}
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold">
+                    {user.nombre?.charAt(0)}{user.apellido?.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-800">
+                      {user.nombre} {user.apellido}
+                      {user.roles && user.roles.length > 0 && (
+                        <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                          {user.roles.length} rol(es)
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-sm text-gray-600">{user.correo}</p>
+                    <div className="flex items-center space-x-4 mt-1">
+                      <p className="text-xs text-gray-500">Edad: {user.edad || 'No especificada'} años</p>
+                      {user.fecha_registro && (
+                        <p className="text-xs text-gray-500">
+                          Registrado: {formatFechaRegistro(user.fecha_registro)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Roles del usuario */}
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-gray-700 mb-1">Roles asignados:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {user.roles && user.roles.length > 0 ? (
+                      user.roles.map((role) => (
+                        <span
+                          key={role.id_rol}
+                          className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full flex items-center space-x-1"
+                        >
+                          <span>{role.nombre}</span>
+                          {role.permisos && (
+                            <span className="text-xs text-purple-600">
+                              ({role.permisos.length})
+                            </span>
+                          )}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-gray-500 italic">
+                        Sin roles asignados
                       </span>
-                    ))
-                  ) : (
-                    <span className="text-xs text-gray-500 italic">Sin roles asignados</span>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex space-x-2">
+              <div className="flex flex-col space-y-2">
                 <button
                   onClick={() => openRoleModal(user)}
-                  className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition-colors"
+                  className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition-colors flex items-center space-x-1"
+                  disabled={loading}
                 >
-                  Roles
+                  <span>👤</span>
+                  <span>Roles</span>
                 </button>
                 <button
                   onClick={() => handleDeleteUser(user.id_usuario)}
-                  className="bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700 transition-colors"
+                  className="bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700 transition-colors flex items-center space-x-1"
                   disabled={loading}
                 >
-                  Eliminar
+                  <span>🗑️</span>
+                  <span>Eliminar</span>
                 </button>
               </div>
             </div>
@@ -307,56 +505,122 @@ export const UserManager: React.FC<UserManagerProps> = ({
 
         {filteredUsers.length === 0 && (
           <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+            <div className="text-gray-400 text-4xl mb-3">👤</div>
             <p className="text-gray-500">
-              {users.length === 0 ? 'No hay usuarios disponibles' : 'No se encontraron usuarios'}
+              {users.length === 0 
+                ? 'No hay usuarios disponibles. Crea el primero.' 
+                : 'No se encontraron usuarios con ese criterio de búsqueda.'}
             </p>
           </div>
         )}
       </div>
 
-      {/* Modal Roles */}
+      {/* Modal para asignar/editar roles */}
       {showRoleModal && selectedUser && (
-        <div className="fixed inset-0 bg-white/90  bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-2">
-              Asignar Roles: {selectedUser.nombre} {selectedUser.apellido}
-            </h3>
-            <p className="text-gray-600 mb-4">{selectedUser.correo}</p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">
+                  Asignar Roles: {selectedUser.nombre} {selectedUser.apellido}
+                </h3>
+                <p className="text-gray-600">{selectedUser.correo}</p>
+              </div>
+              <button
+                onClick={() => setShowRoleModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-800">
+                Actualmente tiene {selectedRoles.length} rol(es) seleccionado(s)
+              </p>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
               {roles.map((role) => (
-                <label key={role.id_rol} className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <label 
+                  key={role.id_rol} 
+                  className={`flex items-start space-x-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                    selectedRoles.includes(role.id_rol)
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
                   <input
                     type="checkbox"
                     checked={selectedRoles.includes(role.id_rol)}
                     onChange={() => handleToggleRole(role.id_rol)}
-                    className="mt-1 w-4 h-4 text-blue-600"
+                    className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
                   <div className="flex-1">
-                    <div className="font-medium text-gray-800">{role.nombre}</div>
-                    <div className="text-xs text-gray-600">{role.descripcion}</div>
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium text-gray-800">{role.nombre}</div>
+                      {role.permisos && (
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                          {role.permisos.length} permisos
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">{role.descripcion}</div>
+                    {role.permisos && role.permisos.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {role.permisos.slice(0, 3).map((permiso) => (
+                          <span 
+                            key={permiso.id_permiso} 
+                            className="text-xs bg-green-100 text-green-800 px-1 py-0.5 rounded"
+                          >
+                            {permiso.nombre}
+                          </span>
+                        ))}
+                        {role.permisos.length > 3 && (
+                          <span className="text-xs text-gray-500">
+                            +{role.permisos.length - 3} más
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </label>
               ))}
             </div>
 
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center pt-4 border-t border-gray-200">
               <div className="text-sm text-gray-600">
-                {selectedRoles.length} de {roles.length} roles seleccionados
+                <span className="font-medium">{selectedRoles.length}</span> de{' '}
+                <span className="font-medium">{roles.length}</span> roles seleccionados
               </div>
               <div className="flex space-x-3">
                 <button
                   onClick={() => setShowRoleModal(false)}
-                  className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
+                  className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={loading}
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSaveRoles}
-                  disabled={loading}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                  disabled={loading || selectedRoles.length === 0}
+                  className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
+                    selectedRoles.length === 0
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
                 >
-                  {loading ? 'Guardando...' : 'Guardar Cambios'}
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Guardando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>💾</span>
+                      <span>Guardar Cambios</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

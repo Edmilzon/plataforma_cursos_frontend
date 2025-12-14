@@ -109,12 +109,6 @@ export default function BadgesAdminPage() {
                 
                 <div className="mt-6 flex justify-end space-x-3">
                   <button 
-                    onClick={() => handleAssign(badge.id)}
-                    className="px-4 py-2 text-green-600 hover:bg-green-50 rounded-lg font-medium"
-                  >
-                    Asignar
-                  </button>
-                  <button 
                     onClick={() => handleEdit(badge.id)}
                     className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg font-medium"
                   >
