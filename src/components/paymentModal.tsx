@@ -72,7 +72,7 @@ export default function PaymentModal({
 
     alert(result.message || `¡Te has inscrito al curso ${courseName}!`);
     onClose();
-    router.push(`/payment/success?courseId=${courseId}&id_usuario=${userId}`);
+    router.push(`/payment/success?courseId=${courseId}&userId=${userId}`);
   } catch (err: any) {
     setError(err.message || 'Error al procesar la inscripción');
   } finally {

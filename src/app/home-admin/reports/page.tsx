@@ -1,11 +1,8 @@
-// src/app/home-admin/reports/page.tsx - VERSIÓN MEJORADA
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BottomNavbar } from '@/components/home-admin/BottomNavbar';
 import { ReportPreviewModal } from '@/components/home-admin/ReportPreviewModal';
 import { reportDataService } from '@/utils/reportDataService';
-import { pdfGenerator } from '@/utils/pdfGenerator';
 
 interface ReportData {
   total_usuarios: number;
@@ -13,7 +10,9 @@ interface ReportData {
   total_inscripciones: number;
   cursos_populares: { titulo: string; inscritos: number }[];
   usuarios_activos: { nombre: string; cursos_completados: number }[];
+  [key: string]: any; 
 }
+
 
 export default function ReportsAdminPage() {
   const [stats, setStats] = useState<ReportData | null>(null);
@@ -22,6 +21,8 @@ export default function ReportsAdminPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [generalStats, setGeneralStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   
   // Estados para el modal de vista previa
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -30,18 +31,28 @@ export default function ReportsAdminPage() {
   const [generatingPDF, setGeneratingPDF] = useState(false);
 
   useEffect(() => {
-    loadReportsData();
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    const end = today.toISOString().split('T')[0];
+    const start = thirtyDaysAgo.toISOString().split('T')[0];
+    setEndDate(end);
+    setStartDate(start);
+    if (start && end) {
+      loadReportsData(start, end);
+    }
   }, []);
 
-  const loadReportsData = async () => {
+  const loadReportsData = async (start: string, end: string) => {
     try {
+      setLoading(true);
       console.log('📊 Cargando datos para reportes...');
       
       const [studentsData, coursesData, teachersData, generalStatsData] = await Promise.all([
-        reportDataService.getStudentReportData(),
-        reportDataService.getCourseReportData(),
-        reportDataService.getTeacherReportData(),
-        reportDataService.getGeneralStats()
+        reportDataService.getStudentReportData(start, end),
+        reportDataService.getCourseReportData(start, end),
+        reportDataService.getTeacherReportData(start, end),
+        reportDataService.getGeneralStats(start, end)
       ]);
 
       console.log('✅ Datos cargados:', {
@@ -82,22 +93,22 @@ export default function ReportsAdminPage() {
       switch (reportType) {
         case 'students':
           reportData = {
-            ...generalStats,
             students: students,
+            ...generalStats, // Asegurar que los datos de gráficos estén presentes
             teachers_count: teachers.length
           };
           break;
         case 'courses':
           reportData = {
-            ...generalStats,
             courses: courses,
+            ...generalStats, // Asegurar que los datos de gráficos estén presentes
             teachers_count: teachers.length
           };
           break;
         case 'teachers':
           reportData = {
-            ...generalStats,
             teachers: teachers,
+            ...generalStats, // Asegurar que los datos de gráficos estén presentes
             teachers_count: teachers.length
           };
           break;
@@ -105,8 +116,10 @@ export default function ReportsAdminPage() {
           reportData = {
             ...generalStats,
             students_count: students.length,
-            teachers_count: teachers.length,
-            courses_count: courses.length
+            teachers_count: teachers.length, // Ya está en generalStats
+            courses_count: courses.length, // Ya está en generalStats
+            startDate,
+            endDate
           };
           break;
       }
@@ -123,13 +136,42 @@ export default function ReportsAdminPage() {
   };
 
   const handleGeneratePDF = async () => {
-    // Solo delegar al modal - evita doble generación
-    console.log('Generación delegada al modal');
+    if (!currentReportData || !currentReportType) return;
+    
+    try {
+      const response = await fetch('/api/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportType: currentReportType,
+          reportData: currentReportData,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error del servidor: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Reporte_${currentReportType}_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error("Error al generar PDF:", error);
+      alert("Hubo un problema al generar el PDF.");
+    }
   };
 
   const handleClosePreview = () => {
     setIsPreviewOpen(false);
     setCurrentReportData(null);
+    setGeneratingPDF(false);
   };
 
   if (loading) {
@@ -138,7 +180,6 @@ export default function ReportsAdminPage() {
         <div className="flex justify-center items-center h-64">
           <div className="text-lg text-gray-600">Cargando datos de reportes...</div>
         </div>
-        <BottomNavbar />
       </div>
     );
   }
@@ -150,6 +191,32 @@ export default function ReportsAdminPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Reportes y Estadísticas</h1>
           <p className="text-gray-600 mt-2">Genera reportes detallados de la plataforma</p>
+        </div>
+
+        {/* Filtro de Fechas */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8 flex flex-wrap items-center gap-4">
+          <h2 className="text-lg font-semibold text-gray-700 whitespace-nowrap">Rango de Fechas:</h2>
+          <div className="flex items-center gap-2">
+            <label htmlFor="startDate" className="text-sm font-medium text-gray-600">Desde:</label>
+            <input type="date" id="startDate" value={startDate} onChange={(e) => {
+              setStartDate(e.target.value);
+              if (endDate) loadReportsData(e.target.value, endDate);
+            }} className="p-2 border rounded-md"/>
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="endDate" className="text-sm font-medium text-gray-600">Hasta:</label>
+            <input type="date" id="endDate" value={endDate} onChange={(e) => {
+              setEndDate(e.target.value);
+              if (startDate) loadReportsData(startDate, e.target.value);
+            }} className="p-2 border rounded-md"/>
+          </div>
+          <button
+            onClick={() => loadReportsData(startDate, endDate)}
+            disabled={loading}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Cargando...' : 'Aplicar Filtro'}
+          </button>
         </div>
 
         {/* Tarjetas de Estadísticas */}
@@ -236,16 +303,21 @@ export default function ReportsAdminPage() {
       </div>
 
       {/* Modal de Vista Previa */}
-      <ReportPreviewModal
-        isOpen={isPreviewOpen}
-        onClose={handleClosePreview}
-        reportType={currentReportType}
-        data={currentReportData}
-        generatingPDF={generatingPDF}
-        onGeneratePDF={handleGeneratePDF}
-      />
-
-      <BottomNavbar />
+      {isPreviewOpen && (
+        <ReportPreviewModal
+          isOpen={isPreviewOpen}
+          onClose={handleClosePreview}
+          reportType={currentReportType}
+          data={currentReportData}
+          generatingPDF={generatingPDF}
+          onGeneratePDF={async () => {
+            setGeneratingPDF(true);
+            await handleGeneratePDF();
+            setGeneratingPDF(false);
+            handleClosePreview();
+          }}
+        />
+      )}
     </>
   );
 }

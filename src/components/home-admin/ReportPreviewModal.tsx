@@ -1,9 +1,22 @@
 // src/components/home-admin/ReportPreviewModal.tsx - VERSIÓN CORREGIDA
 'use client';
 
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
+import { Bar, Pie } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
+
+
 import React from 'react';
-import { ReportCharts } from './ReportCharts';
-import { pdfGeneratorImage } from '@/utils/pdfGeneratorImage';
 
 interface PreviewModalProps {
   isOpen: boolean;
@@ -12,6 +25,8 @@ interface PreviewModalProps {
   data: any;
   generatingPDF: boolean;
   onGeneratePDF: () => void;
+  startDate?: string;
+  endDate?: string;
 }
 
 export const ReportPreviewModal: React.FC<PreviewModalProps> = ({
@@ -21,28 +36,14 @@ export const ReportPreviewModal: React.FC<PreviewModalProps> = ({
   data,
   generatingPDF,
   onGeneratePDF,
+  startDate,
+  endDate,
 }) => {
   if (!isOpen) return null;
 
-  const handleGeneratePDF = async () => {
-    try {
-      console.log('📸 Iniciando captura de vista previa para PDF...');
-      const contentElement = document.getElementById('report-preview-content');
-      if (contentElement) {
-        await pdfGeneratorImage.generateReportPDF(contentElement, reportType);
-        console.log('✅ PDF generado exitosamente');
-      } else {
-        console.error('No se encontró el elemento de contenido');
-        alert('Error: No se pudo encontrar el contenido del reporte');
-      }
-    } catch (error) {
-      console.error('Error generando PDF:', error);
-      alert('Error al generar el PDF');
-    }
-  };
+  const handleGeneratePDF = () => onGeneratePDF();
   return (
-    // CAMBIO IMPORTANTE: Quitar bg-opacity y usar bg-black para el overlay
-    <div className="fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header del Modal */}
         <div className="flex justify-between items-center p-6 border-b border-gray-300">
@@ -53,6 +54,11 @@ export const ReportPreviewModal: React.FC<PreviewModalProps> = ({
             {reportType === 'teachers' && 'Reporte de Docentes'}
             {reportType === 'general' && 'Reporte General'}
           </h2>
+          {startDate && endDate && (
+            <p className="text-sm text-gray-500 ml-4">
+              {`Desde: ${new Date(startDate).toLocaleDateString('es-ES')} - Hasta: ${new Date(endDate).toLocaleDateString('es-ES')}`}
+            </p>
+          )}
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -62,15 +68,7 @@ export const ReportPreviewModal: React.FC<PreviewModalProps> = ({
         </div>
 
         {/* Contenido del Reporte - SIN CLASES PDF-SAFE */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div 
-            id="report-preview-content" 
-            className="bg-white"
-            style={{
-              backgroundColor: 'white',
-              color: 'black'
-            }}
-          >
+        <div id="report-preview-content" className="flex-1 overflow-y-auto p-6 bg-gray-50">
             {/* RESUMEN GENERAL */}
             <div className="mb-8 p-4 bg-gray-50 border border-gray-300 rounded-lg">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Resumen del Reporte</h2>
@@ -102,12 +100,53 @@ export const ReportPreviewModal: React.FC<PreviewModalProps> = ({
               </div>
             </div>
 
-            {/* Gráficos */}
-            <div className="mb-8">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Gráficos Estadísticos</h2>
-              <ReportCharts reportType={reportType} data={data} />
-            </div>
-            
+            {/* Gráficos (Solo para reporte general) */}
+            {data?.registros_por_mes && data?.distribucion_edades && (
+              <div className="mb-8">
+                <h3 className="text-2xl font-bold text-gray-800 mb-4">Visualización de Datos</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                    <h4 className="text-md font-semibold text-gray-700 mb-4">Registros por Mes</h4>
+                    <Bar
+                      options={{ responsive: true }}
+                      data={{
+                        labels: data?.registros_por_mes?.map((d: any) => d.mes) || [],
+                        datasets: [{
+                          label: 'Nuevos Usuarios',
+                          data: data?.registros_por_mes?.map((d: any) => d.count) || [],
+                          backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        }],
+                      }}
+                    />
+                  </div>
+                  <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                    <h4 className="text-md font-semibold text-gray-700 mb-4">Distribución de Edades</h4>
+                    <Pie
+                      options={{ responsive: true }}
+                      data={{
+                        labels: data?.distribucion_edades?.map((d: any) => d.rango) || [],
+                        datasets: [{
+                          label: 'Usuarios',
+                          data: data?.distribucion_edades?.map((d: any) => d.count) || [],
+                          backgroundColor: [
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(75, 192, 192, 0.5)',
+                            'rgba(255, 206, 86, 0.5)',
+                            'rgba(153, 102, 255, 0.5)',
+                            'rgba(255, 99, 132, 0.5)',
+                          ],
+                          borderColor: [
+                            '#36A2EB', '#4BC0C0', '#FFCE56', '#9966FF', '#FF6384'
+                          ],
+                          borderWidth: 1,
+                        }],
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Tabla de datos */}
             <div className="mt-6 bg-white border border-gray-300 rounded-lg overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-300 bg-gray-50">
@@ -122,7 +161,6 @@ export const ReportPreviewModal: React.FC<PreviewModalProps> = ({
               <div className="overflow-x-auto">
                 {renderDataTable(reportType, data)}
               </div>
-            </div>
           </div>
         </div>
 
@@ -153,123 +191,116 @@ function renderDataTable(reportType: string, data: any) {
   switch (reportType) {
     case 'students':
       return (
-        <table className="min-w-full divide-y divide-gray-300">
-          <thead className="bg-gray-100">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-blue-500">
             <tr>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-800 border border-gray-300">Estudiante</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-800 border border-gray-300">Edad</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-800 border border-gray-300">Puntos</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-800 border border-gray-300">Cursos</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-800 border border-gray-300">Progreso</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Estudiante</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Puntos</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Cursos Inscritos</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Fecha Registro</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-300">
-            {data.students?.slice(0, 10).map((student: any) => (
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data.students?.length > 0 ? data.students.map((student: any) => (
               <tr key={student.id}>
-                <td className="px-4 py-2 border border-gray-300">
+                <td className="px-6 py-4 whitespace-nowrap">
                   <div className="font-medium text-gray-900">
                     {student.nombre} {student.apellido}
                   </div>
                   <div className="text-sm text-gray-600">{student.correo}</div>
                 </td>
-                <td className="px-4 py-2 text-gray-900 border border-gray-300">
-                  {student.edad} años
-                </td>
-                <td className="px-4 py-2 text-gray-900 border border-gray-300">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                   {student.saldo_punto} pts
                 </td>
-                <td className="px-4 py-2 text-gray-900 border border-gray-300">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                   {student.cursos_inscritos}
                 </td>
-                <td className="px-4 py-2 text-gray-900 border border-gray-300">
-                  <div className="flex items-center">
-                    <div className="w-16 bg-gray-300 rounded-full h-2 mr-2">
-                      <div 
-                        className="bg-green-600 h-2 rounded-full" 
-                        style={{ width: `${student.progreso_promedio}%` }}
-                      ></div>
-                    </div>
-                    <span className="text-sm">{student.progreso_promedio}%</span>
-                  </div>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {new Date(student.fecha_registro).toLocaleDateString('es-ES')}
                 </td>
               </tr>
-            ))}
+            )) : null}
+            {(!data.students || data.students.length === 0) && (
+              <tr><td colSpan={4} className="text-center py-6 text-gray-500">No hay datos de estudiantes.</td></tr>
+            )}
           </tbody>
         </table>
       );
 
     case 'courses':
       return (
-        <table className="min-w-full divide-y divide-gray-300">
-          <thead className="bg-gray-100">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-green-500">
             <tr>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-800 border border-gray-300">Curso</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-800 border border-gray-300">Docente</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-800 border border-gray-300">Inscritos</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-800 border border-gray-300">Precio</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-800 border border-gray-300">Modalidad</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Curso</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Docente</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Inscritos</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Precio</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Fecha Inicio</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-300">
-            {data.courses?.slice(0, 10).map((course: any) => (
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data.courses?.length > 0 ? data.courses.map((course: any) => (
               <tr key={course.id}>
-                <td className="px-4 py-2 border border-gray-300">
+                <td className="px-6 py-4 whitespace-nowrap">
                   <div className="font-medium text-gray-900">{course.titulo}</div>
-                  <div className="text-sm text-gray-600">{course.descripcion}</div>
+                  <div className="text-sm text-gray-600">{course.modalidad}</div>
                 </td>
-                <td className="px-4 py-2 text-gray-900 border border-gray-300">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                   {course.docente}
                 </td>
-                <td className="px-4 py-2 text-gray-900 border border-gray-300">
-                  {course.inscritos} estudiantes
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {course.inscritos}
                 </td>
-                <td className="px-4 py-2 text-gray-900 border border-gray-300">
-                  {course.precio > 0 ? `S/. ${course.precio}` : 'Gratis'}
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {course.precio > 0 ? `S/. ${course.precio.toFixed(2)}` : 'Gratis'}
                 </td>
-                <td className="px-4 py-2 text-gray-900 border border-gray-300">
-                  <span className="px-2 py-1 bg-blue-200 text-blue-800 rounded text-xs">
-                    {course.modalidad}
-                  </span>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {new Date(course.fecha_inicio).toLocaleDateString('es-ES')}
                 </td>
               </tr>
-            ))}
+            )) : null}
+            {(!data.courses || data.courses.length === 0) && (
+              <tr><td colSpan={5} className="text-center py-6 text-gray-500">No hay datos de cursos.</td></tr>
+            )}
           </tbody>
         </table>
       );
 
     case 'teachers':
       return (
-        <table className="min-w-full divide-y divide-gray-300">
-          <thead className="bg-gray-100">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-purple-500">
             <tr>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-800 border border-gray-300">Docente</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-800 border border-gray-300">Cursos</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-800 border border-gray-300">Estudiantes</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-800 border border-gray-300">Registro</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Docente</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Cursos Asignados</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Total Estudiantes</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Fecha Registro</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-300">
-            {data.teachers?.map((teacher: any) => (
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data.teachers?.length > 0 ? data.teachers.map((teacher: any) => (
               <tr key={teacher.id}>
-                <td className="px-4 py-2 border border-gray-300">
+                <td className="px-6 py-4 whitespace-nowrap">
                   <div className="font-medium text-gray-900">
                     {teacher.nombre} {teacher.apellido}
                   </div>
                   <div className="text-sm text-gray-600">{teacher.correo}</div>
                 </td>
-                <td className="px-4 py-2 text-gray-900 border border-gray-300">
-                  <span className="px-2 py-1 bg-purple-200 text-purple-800 rounded text-xs">
-                    {teacher.cursos_count} cursos
-                  </span>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {teacher.cursos_count}
                 </td>
-                <td className="px-4 py-2 text-gray-900 border border-gray-300">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                   {teacher.estudiantes_totales} estudiantes
                 </td>
-                <td className="px-4 py-2 text-gray-900 border border-gray-300">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                   {new Date(teacher.fecha_registro).toLocaleDateString('es-ES')}
                 </td>
               </tr>
-            ))}
+            )) : null}
+            {(!data.teachers || data.teachers.length === 0) && (
+              <tr><td colSpan={4} className="text-center py-6 text-gray-500">No hay datos de docentes.</td></tr>
+            )}
           </tbody>
         </table>
       );

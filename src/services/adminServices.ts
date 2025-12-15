@@ -20,6 +20,17 @@ export interface User extends ApiUser {
   roles?: Role[];
 }
 
+export interface Reward {
+  id_recompensa?: number;
+  nombre: string;
+  descripcion: string;
+  tipo: string;
+  puntos_requeridos: number;
+  cantidad_disponible: number;
+  estado: 'Activo' | 'Inactivo';
+  imagen_url: string;
+}
+
 export const adminService = {
   // ==================== ROLES ====================
 
@@ -353,5 +364,91 @@ export const adminService = {
     const role = roles.find(r => r.nombre.toLowerCase() === roleName.toLowerCase());
     if (!role) throw new Error(`Rol "${roleName}" no encontrado`);
     return role.id_rol;
+  },
+
+  // ==================== RECOMPENSAS ====================
+
+  async getRewards(): Promise<Reward[]> {
+    try {
+      console.log('🔍 Obteniendo todas las recompensas...');
+      const response = await fetch(`http://localhost:5000/recompensas`);
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudieron obtener las recompensas`);
+      }
+      const rewards = await response.json();
+      console.log('✅ Recompensas obtenidas:', rewards);
+      return rewards;
+    } catch (error) {
+      console.error('❌ Error obteniendo recompensas:', error);
+      throw error;
+    }
+  },
+
+  async createReward(rewardData: Omit<Reward, 'id_recompensa'>): Promise<Reward> {
+    try {
+      console.log('📝 Creando recompensa:', rewardData);
+      const response = await fetch(`http://localhost:5000/recompensas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rewardData),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error del servidor al crear:', errorText);
+        throw new Error(`Error ${response.status}: No se pudo crear la recompensa`);
+      }
+
+      const newReward = await response.json();
+      console.log('✅ Recompensa creada:', newReward);
+      return newReward;
+    } catch (error) {
+      console.error('❌ Error creando recompensa:', error);
+      throw error;
+    }
+  },
+
+  async updateReward(rewardId: number, rewardData: Partial<Reward>): Promise<Reward> {
+    try {
+      console.log(`✏️ Actualizando recompensa ${rewardId}:`, rewardData);
+      const response = await fetch(`http://localhost:5000/recompensas/${rewardId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rewardData),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error del servidor al actualizar:', errorText);
+        throw new Error(`Error ${response.status}: No se pudo actualizar la recompensa`);
+      }
+
+      const updatedReward = await response.json();
+      console.log('✅ Recompensa actualizada:', updatedReward);
+      return updatedReward;
+    } catch (error) {
+      console.error('❌ Error actualizando recompensa:', error);
+      throw error;
+    }
+  },
+
+  async deleteReward(rewardId: number): Promise<void> {
+    try {
+      console.log(`🗑️ Eliminando (desactivando) recompensa ${rewardId}...`);
+      const response = await fetch(`http://localhost:5000/recompensas/${rewardId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error del servidor al eliminar:', errorText);
+        throw new Error(`Error ${response.status}: No se pudo eliminar la recompensa`);
+      }
+
+      console.log('✅ Recompensa eliminada (desactivada) correctamente');
+    } catch (error) {
+      console.error('❌ Error eliminando recompensa:', error);
+      throw error;
+    }
   }
 };

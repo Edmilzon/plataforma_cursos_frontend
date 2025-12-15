@@ -85,12 +85,23 @@ const calculateRegistrationTimeline = (users: any[]) => {
 };
 
 export const reportDataService = {
-  async getStudentReportData(): Promise<StudentReportData[]> {
+  async getStudentReportData(startDate?: string, endDate?: string): Promise<StudentReportData[]> {
     try {
-      const [students, ranking] = await Promise.all([
+      let [students, ranking] = await Promise.all([
         userService.getUsersByRole('Estudiante'),
         rankingService.getStudentRanking()
       ]);
+
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999); // Incluir todo el día de fin
+        students = students.filter(s => {
+          if (!s.fecha_registro) return false;
+          const registro = new Date(s.fecha_registro);
+          return registro >= start && registro <= end;
+        });
+      }
 
       return students.map(student => {
         const studentRank = ranking.find((r: any) => r.id_usuario === student.id_usuario);
@@ -112,12 +123,23 @@ export const reportDataService = {
     }
   },
 
-  async getCourseReportData(): Promise<CourseReportData[]> {
+  async getCourseReportData(startDate?: string, endDate?: string): Promise<CourseReportData[]> {
     try {
-      const [courses, popularCourses] = await Promise.all([
+      let [courses, popularCourses] = await Promise.all([
         courseService.getAllCourses(),
         enrollmentService.getCoursesWithEnrollments()
       ]);
+
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        courses = courses.filter((c: any) => {
+          if (!c.fecha_inicio) return false;
+          const inicio = new Date(c.fecha_inicio);
+          return inicio >= start && inicio <= end;
+        });
+      }
 
       return courses.map((course: any) => {
         const popularCourse = popularCourses.find((pc: any) => pc.id_curso === course.id_curso);
@@ -142,10 +164,21 @@ export const reportDataService = {
     }
   },
 
-  async getTeacherReportData(): Promise<TeacherReportData[]> {
+  async getTeacherReportData(startDate?: string, endDate?: string): Promise<TeacherReportData[]> {
     try {
-      const teachers = await userService.getUsersByRole('Docente');
+      let teachers = await userService.getUsersByRole('Docente');
       
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        teachers = teachers.filter(t => {
+          if (!t.fecha_registro) return false;
+          const registro = new Date(t.fecha_registro);
+          return registro >= start && registro <= end;
+        });
+      }
+
       return teachers.map(teacher => ({
         id: teacher.id_usuario,
         nombre: teacher.nombre,
@@ -161,14 +194,28 @@ export const reportDataService = {
     }
   },
 
-  async getGeneralStats(): Promise<GeneralStats> {
+  async getGeneralStats(startDate?: string, endDate?: string): Promise<GeneralStats> {
     try {
-      const [students, teachers, courses, popularCourses] = await Promise.all([
+      let [students, teachers, courses, popularCourses] = await Promise.all([
         userService.getUsersByRole('Estudiante'),
         userService.getUsersByRole('Docente'),
         courseService.getAllCourses(),
         enrollmentService.getCoursesWithEnrollments()
       ]);
+
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        
+        students = students.filter(u => u.fecha_registro && new Date(u.fecha_registro) >= start && new Date(u.fecha_registro) <= end);
+        teachers = teachers.filter(u => u.fecha_registro && new Date(u.fecha_registro) >= start && new Date(u.fecha_registro) <= end);
+        courses = courses.filter((c: any) => {
+          if (!c.fecha_inicio) return false;
+          const inicio = new Date(c.fecha_inicio);
+          return inicio >= start && inicio <= end;
+        });
+      }
 
       const allUsers = [...students, ...teachers];
       
