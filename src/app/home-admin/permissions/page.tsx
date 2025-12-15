@@ -145,8 +145,8 @@ export default function PermissionsAdminPage() {
             <UserManager
               users={users}
               roles={roles}
-              onCreateUser={(nombre, apellido, correo, edad, password) =>
-                adminService.createUser(nombre, apellido, correo, edad, password)
+              onCreateUser={(nombre, apellido, correo, edad, password, roleIds) =>
+                adminService.createUser(nombre, apellido, correo, edad, password, roleIds)
               }
               onDeleteUser={(userId) => adminService.deleteUser(userId)}
               onAssignRoles={(userId, roleIds) =>
