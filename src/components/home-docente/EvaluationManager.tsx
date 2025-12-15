@@ -36,6 +36,7 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
     calificacion_maxima: 100,
   });
 
+  const [esTrabajoFinal, setEsTrabajoFinal] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [evaluationToDelete, setEvaluationToDelete] = useState<Evaluation | null>(null);
 
@@ -59,11 +60,23 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
 
   const handleOpenForm = (evaluation: Evaluation | null = null) => {
     setError(null);
+    const MARCA_FINAL = ''; // Marca técnica
+
     if (evaluation) {
       setEditingEvaluation(evaluation);
+      
+      // Detección de marca
+      const isFinal = evaluation.descripcion.includes(MARCA_FINAL);
+      setEsTrabajoFinal(isFinal);
+
+      // Limpieza de descripción para el formulario
+      const cleanDescription = isFinal 
+        ? evaluation.descripcion.replace(MARCA_FINAL, '').trim() 
+        : evaluation.descripcion;
+
       setFormData({
         titulo: evaluation.titulo,
-        descripcion: evaluation.descripcion,
+        descripcion: cleanDescription,
         tipo: evaluation.tipo,
         fecha_hora_inicio: new Date(evaluation.fecha_hora_inicio).toISOString().substring(0, 16),
         fecha_hora_entrega: new Date(evaluation.fecha_hora_entrega).toISOString().substring(0, 16),
@@ -71,6 +84,7 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
       });
     } else {
       setEditingEvaluation(null);
+      setEsTrabajoFinal(false); // Resetear checkbox
       setFormData({
         titulo: '',
         descripcion: '',
@@ -87,12 +101,12 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
     e.preventDefault();
     setError(null);
     try {
-      // La API espera 'YYYY-MM-DD HH:mm:ss', pero el input da 'YYYY-MM-DDTHH:mm'
-      // Convertimos el formato antes de enviar.
+      // 1. Preparar payload con formato de fecha correcto Y el booleano es_trabajo_final
       const payload = {
         ...formData,
         fecha_hora_inicio: `${formData.fecha_hora_inicio.replace('T', ' ')}:00`,
         fecha_hora_entrega: `${formData.fecha_hora_entrega.replace('T', ' ')}:00`,
+        es_trabajo_final: esTrabajoFinal 
       };
 
       if (editingEvaluation) {

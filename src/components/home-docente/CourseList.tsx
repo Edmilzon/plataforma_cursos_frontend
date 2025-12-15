@@ -18,6 +18,7 @@ export default function CourseList({ courses, onCourseUpdate }: CourseListProps)
     descripcion: '',
     precio: 0,
     modalidad: '',
+    cupo: 0,
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +29,7 @@ export default function CourseList({ courses, onCourseUpdate }: CourseListProps)
       descripcion: course.descripcion,
       precio: course.precio,
       modalidad: course.modalidad,
+      cupo: course.cupo || 0,
     });
     setIsEditModalOpen(true);
     setError(null);
@@ -46,7 +48,8 @@ export default function CourseList({ courses, onCourseUpdate }: CourseListProps)
     try {
       await courseService.updateCourse(String(selectedCourse.id_curso), {
         ...formData,
-        precio: Number(formData.precio)
+        precio: Number(formData.precio),
+        cupo: Number(formData.cupo)
       });
       setIsEditModalOpen(false);
       onCourseUpdate();
@@ -114,8 +117,8 @@ export default function CourseList({ courses, onCourseUpdate }: CourseListProps)
 
       {/* Modal de Edición */}
       {isEditModalOpen && selectedCourse && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold mb-4 text-gray-800">Actualizar Curso: {selectedCourse.titulo}</h3>
             {error && <p className="text-red-500 mb-4">{error}</p>}
             <form onSubmit={handleUpdate} className="space-y-4">
@@ -130,6 +133,39 @@ export default function CourseList({ courses, onCourseUpdate }: CourseListProps)
               <div>
                 <label className="block text-sm font-medium text-gray-700">Precio</label>
                 <input type="number" step="0.01" value={formData.precio} onChange={(e) => setFormData({...formData, precio: parseFloat(e.target.value)})} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-gray-900" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Cupos Disponibles</label>
+                <input 
+                  type="number" 
+                  min="0" 
+                  value={formData.cupo} 
+                  onChange={(e) => setFormData({...formData, cupo: parseInt(e.target.value) || 0})} 
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-gray-900" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Precio</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    value={formData.precio} 
+                    onChange={(e) => setFormData({...formData, precio: parseFloat(e.target.value)})} 
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-gray-900" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Cupos</label>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    value={formData.cupo} 
+                    onChange={(e) => setFormData({...formData, cupo: parseInt(e.target.value) || 0})} 
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-gray-900" 
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Modalidad</label>

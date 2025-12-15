@@ -14,6 +14,7 @@ export interface Course {
   };
   precio: number;
   modalidad: string;
+  cupo?: number;
 }
 
 interface CourseCardProps {
