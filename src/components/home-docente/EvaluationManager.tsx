@@ -25,6 +25,8 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [isFinalEvaluation, setIsFinalEvaluation] = useState(false);
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEvaluation, setEditingEvaluation] = useState<Evaluation | null>(null);
   const [formData, setFormData] = useState({
@@ -61,9 +63,13 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
     setError(null);
     if (evaluation) {
       setEditingEvaluation(evaluation);
+      // Lógica para detectar si es evaluación final
+      const isFinal = evaluation.descripcion.includes('[FINAL]');
+      setIsFinalEvaluation(isFinal);
+
       setFormData({
         titulo: evaluation.titulo,
-        descripcion: evaluation.descripcion,
+        descripcion: evaluation.descripcion.replace('[FINAL]', '').trim(), // Limpiamos la etiqueta visualmente
         tipo: evaluation.tipo,
         fecha_hora_inicio: new Date(evaluation.fecha_hora_inicio).toISOString().substring(0, 16),
         fecha_hora_entrega: new Date(evaluation.fecha_hora_entrega).toISOString().substring(0, 16),
@@ -71,6 +77,7 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
       });
     } else {
       setEditingEvaluation(null);
+      setIsFinalEvaluation(false); // Resetear checkbox
       setFormData({
         titulo: '',
         descripcion: '',
@@ -87,10 +94,17 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
     e.preventDefault();
     setError(null);
     try {
-      // La API espera 'YYYY-MM-DD HH:mm:ss', pero el input da 'YYYY-MM-DDTHH:mm'
-      // Convertimos el formato antes de enviar.
+      // 1. Preparamos la descripción con la marca [FINAL] si corresponde
+      let finalDescriptionPayload = formData.descripcion.trim();
+      if (isFinalEvaluation) {
+        finalDescriptionPayload += ' [FINAL]';
+      }
+
+      // 2. Preparamos el payload (objeto a enviar)
+      // La API espera 'YYYY-MM-DD HH:mm:ss', convertimos desde 'YYYY-MM-DDTHH:mm'
       const payload = {
         ...formData,
+        descripcion: finalDescriptionPayload,
         fecha_hora_inicio: `${formData.fecha_hora_inicio.replace('T', ' ')}:00`,
         fecha_hora_entrega: `${formData.fecha_hora_entrega.replace('T', ' ')}:00`,
       };
@@ -216,6 +230,19 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
                 required
               />
             </div>
+          </div>
+
+          <div className="flex items-center gap-2 mb-6 p-3 bg-purple-50 border border-purple-200 rounded text-sm">
+            <input
+              type="checkbox"
+              id="finalEvalCheck"
+              checked={isFinalEvaluation}
+              onChange={(e) => setIsFinalEvaluation(e.target.checked)}
+              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+            />
+            <label htmlFor="finalEvalCheck" className="font-medium text-gray-700 cursor-pointer select-none">
+              Evaluación Final.
+            </label>
           </div>
 
           <div className="flex justify-end space-x-2">

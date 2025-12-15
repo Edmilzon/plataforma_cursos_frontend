@@ -5,8 +5,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { courseService } from '@/services/courseService';
 import { enrollmentService } from '@/services/enrollmentService';
-import { progressService } from '@/services/progressService';
-import { deliveryService } from '@/services/deliveryService';
 import { BottomNavbar } from '@/components/BottomNavbar';
 
 interface Module {
@@ -106,7 +104,7 @@ export default function MyCourseDetailPage() {
 
                     return {
                       ...lesson,
-                      completado: false, // Por ahora siempre false
+                      completado: false, // Por ahora siempre false, luego se actualiza con lógica real
                       tareas: assignments || [],
                       evaluaciones: evaluations || []
                     };
@@ -147,10 +145,37 @@ export default function MyCourseDetailPage() {
     fetchCourseData();
   }, [courseId]);
 
+  // --- LÓGICA DEL CERTIFICADO ---
+  // Esta función verifica si el estudiante cumple con TODO para habilitar el botón
+  const checkCertificateEligibility = () => {
+    // 1. Verificar progreso numérico (Debe ser 100%)
+    if (progress < 100) return false;
+
+    // 2. Verificar si hay Tareas marcadas como [FINAL] y si están entregadas
+    const hasPendingFinalTask = modules.some(m => 
+      m.lecciones?.some(l => 
+        l.tareas?.some(t => t.descripcion.includes('[FINAL]') && !t.entrega)
+      )
+    );
+    if (hasPendingFinalTask) return false;
+
+    // 3. Verificar si hay Evaluaciones marcadas como [FINAL] y si están entregadas
+    const hasPendingFinalEval = modules.some(m => 
+      m.lecciones?.some(l => 
+        l.evaluaciones?.some(e => e.descripcion.includes('[FINAL]') && !e.entrega)
+      )
+    );
+    if (hasPendingFinalEval) return false;
+
+    // Si pasa todas las validaciones, es apto
+    return true;
+  };
+  
+  const isCertificateEligible = checkCertificateEligibility();
+  // -----------------------------
+
   const handleMarkCompleted = async (lessonId: string) => {
     try {
-      // Por ahora solo actualizamos el estado local
-      // Más adelante conectaremos con el backend
       setModules(prev => prev.map(module => ({
         ...module,
         lecciones: module.lecciones?.map(lesson => 
@@ -160,11 +185,10 @@ export default function MyCourseDetailPage() {
         )
       })));
 
-      // Actualizar progreso local
       const totalLessons = modules.reduce((acc, module) => acc + (module.lecciones?.length || 0), 0);
       const completedLessons = modules.reduce((acc, module) => 
         acc + (module.lecciones?.filter(lesson => lesson.completado).length || 0), 0
-      ) + 1; // +1 porque acabamos de marcar una como completada
+      ) + 1;
       
       const newProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
       setProgress(newProgress);
@@ -188,11 +212,8 @@ export default function MyCourseDetailPage() {
     }
 
     try {
-      // Simular subida de archivo
       const fileUrl = await simulateFileUpload(selectedFile);
       
-      // Por ahora solo actualizamos el estado local
-      // Más adelante conectaremos con el backend
       setModules(prevModules => 
         prevModules.map(module => ({
           ...module,
@@ -226,8 +247,6 @@ export default function MyCourseDetailPage() {
 
   const handleDeliverEvaluation = async (evaluationId: string) => {
     try {
-      // Por ahora solo actualizamos el estado local
-      // Más adelante conectaremos con el backend
       setModules(prevModules => 
         prevModules.map(module => ({
           ...module,
@@ -257,7 +276,6 @@ export default function MyCourseDetailPage() {
     }
   };
 
-  // Función temporal para simular subida de archivos
   const simulateFileUpload = async (file: File): Promise<string> => {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -333,6 +351,38 @@ export default function MyCourseDetailPage() {
               ></div>
             </div>
           </div>
+
+          {/* BOTÓN DE CERTIFICADO (AQUÍ ESTÁ LA LÓGICA VISUAL) */}
+          <div className="mt-8 pt-4 border-t border-gray-100 flex flex-col items-center justify-center">
+            <button
+              onClick={() => router.push(`../certificates/${courseId}`)}
+              disabled={!isCertificateEligible}
+              className={`
+                flex items-center gap-2 px-8 py-3 rounded-lg font-bold shadow-sm transition-all transform duration-200
+                ${isCertificateEligible 
+                  ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white hover:shadow-lg hover:-translate-y-1 cursor-pointer' 
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-70'}
+              `}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {isCertificateEligible ? 'Descargar Certificado de Finalización' : 'Certificado Bloqueado'}
+            </button>
+            
+            {!isCertificateEligible && (
+               <div className="mt-3 text-center">
+                  <p className="text-xs text-gray-500">
+                    * Para desbloquear el certificado debes completar el <strong>100% del contenido</strong>
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    y entregar todas las actividades finales (Tareas o Evaluaciones).
+                  </p>
+               </div>
+            )}
+          </div>
+          {/* FIN BOTÓN DE CERTIFICADO */}
+
         </div>
 
         {/* Módulos y contenido */}
@@ -386,8 +436,17 @@ export default function MyCourseDetailPage() {
                                 <div key={tarea.id_tarea} className="bg-gray-50 p-4 rounded-lg border">
                                   <div className="flex justify-between items-start mb-3">
                                     <div className="flex-1">
-                                      <h5 className="font-medium text-lg">{tarea.titulo}</h5>
-                                      <p className="text-gray-600 mt-1">{tarea.descripcion}</p>
+                                      <div className="flex items-center gap-2">
+                                        <h5 className="font-medium text-lg">{tarea.titulo}</h5>
+                                        {tarea.descripcion.includes('[FINAL]') && (
+                                           <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded border border-yellow-200 font-bold">
+                                              TAREA FINAL
+                                           </span>
+                                        )}
+                                      </div>
+                                      
+                                      {/* Limpiamos la etiqueta [FINAL] para que no se vea feo en la descripción */}
+                                      <p className="text-gray-600 mt-1">{tarea.descripcion.replace('[FINAL]', '')}</p>
                                       <p className="text-sm text-gray-500 mt-2">
                                         📅 Entrega: {new Date(tarea.fecha_entrega).toLocaleDateString()}
                                       </p>
@@ -454,8 +513,16 @@ export default function MyCourseDetailPage() {
                                 <div key={evaluacion.id_evaluacion} className="bg-gray-50 p-4 rounded-lg border">
                                   <div className="flex justify-between items-start">
                                     <div className="flex-1">
-                                      <h5 className="font-medium text-lg">{evaluacion.titulo}</h5>
-                                      <p className="text-gray-600 mt-1">{evaluacion.descripcion}</p>
+                                      <div className="flex items-center gap-2">
+                                        <h5 className="font-medium text-lg">{evaluacion.titulo}</h5>
+                                        {evaluacion.descripcion.includes('[FINAL]') && (
+                                           <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded border border-purple-200 font-bold">
+                                              EVALUACIÓN FINAL
+                                           </span>
+                                        )}
+                                      </div>
+                                      
+                                      <p className="text-gray-600 mt-1">{evaluacion.descripcion.replace('[FINAL]', '')}</p>
                                       <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
                                         <div>
                                           <span className="font-medium">Tipo:</span> {evaluacion.tipo}
