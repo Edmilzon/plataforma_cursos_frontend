@@ -7,7 +7,17 @@ import {
   StudentReportData, 
   CourseReportData, 
   TeacherReportData,
-  GeneralStats
+  GeneralStats,
+  AcademicProgressReportData,
+  EvaluationGradesReportData,
+  AverageGradesReportData,
+  CompletedCoursesReportData,
+  ActiveStudentsReportData,
+  CoursesByTeacherReportData,
+  GlobalRankingReportData,
+  AwardedBadgesReportData,
+  ScheduleControlReportData,
+  NewUserActivityReportData
 } from '@/utils/reportDataService';
 import { BottomNavbar } from '@/components/home-admin/BottomNavbar';
 
@@ -15,6 +25,16 @@ export default function ReportsAdminPage() {
   const [students, setStudents] = useState<StudentReportData[]>([]);
   const [courses, setCourses] = useState<CourseReportData[]>([]);
   const [teachers, setTeachers] = useState<TeacherReportData[]>([]);
+  const [academicProgress, setAcademicProgress] = useState<AcademicProgressReportData[]>([]);
+  const [evaluationGrades, setEvaluationGrades] = useState<EvaluationGradesReportData[]>([]);
+  const [averageGrades, setAverageGrades] = useState<AverageGradesReportData[]>([]);
+  const [completedCourses, setCompletedCourses] = useState<CompletedCoursesReportData[]>([]);
+  const [activeStudents, setActiveStudents] = useState<ActiveStudentsReportData[]>([]);
+  const [coursesByTeacher, setCoursesByTeacher] = useState<CoursesByTeacherReportData[]>([]);
+  const [globalRanking, setGlobalRanking] = useState<GlobalRankingReportData[]>([]);
+  const [scheduleControl, setScheduleControl] = useState<ScheduleControlReportData[]>([]);
+  const [newUserActivity, setNewUserActivity] = useState<NewUserActivityReportData[]>([]);
+  const [awardedBadges, setAwardedBadges] = useState<AwardedBadgesReportData | null>(null);
   const [generalStats, setGeneralStats] = useState<GeneralStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState('');
@@ -22,7 +42,7 @@ export default function ReportsAdminPage() {
   
   // Estados para el modal de vista previa
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [currentReportType, setCurrentReportType] = useState<'students' | 'courses' | 'teachers' | 'general'>('general');
+  const [currentReportType, setCurrentReportType] = useState<'students' | 'courses' | 'teachers' | 'general' | 'academicProgress' | 'evaluationGrades' | 'averageGrades' | 'completedCourses' | 'activeStudents' | 'coursesByTeacher' | 'globalRanking' | 'awardedBadges' | 'scheduleControl' | 'newUserActivity'>('general');
   const [currentReportData, setCurrentReportData] = useState<any>(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
 
@@ -44,24 +64,54 @@ export default function ReportsAdminPage() {
       setLoading(true);
       console.log('📊 Cargando datos para reportes...');
       
-      const [studentsData, coursesData, teachersData, generalStatsData] = await Promise.all([
+      const [studentsData, coursesData, teachersData, generalStatsData, academicProgressData, evaluationGradesData, averageGradesData, completedCoursesData, activeStudentsData, coursesByTeacherData, globalRankingData, awardedBadgesData, scheduleControlData, newUserActivityData] = await Promise.all([
         reportDataService.getStudentReportData(start, end),
         reportDataService.getCourseReportData(start, end),
         reportDataService.getTeacherReportData(start, end),
-        reportDataService.getGeneralStats(start, end)
+        reportDataService.getGeneralStats(start, end),
+        reportDataService.getAcademicProgressReportData(start, end),
+        reportDataService.getEvaluationGradesReportData(start, end),
+        reportDataService.getAverageGradesReportData(start, end),
+        reportDataService.getCompletedCoursesReportData(),
+        reportDataService.getActiveStudentsReportData(),
+        reportDataService.getCoursesByTeacherReportData(),
+        reportDataService.getGlobalRankingReportData(),
+        reportDataService.getAwardedBadgesReportData(),
+        reportDataService.getScheduleControlReportData(),
+        reportDataService.getNewUserActivityReportData(start, end)
       ]);
 
       console.log('✅ Datos cargados:', {
         students: studentsData.length,
         courses: coursesData.length,
         teachers: teachersData.length,
-        generalStats: generalStatsData
+        generalStats: generalStatsData,
+        academicProgress: academicProgressData.length,
+        evaluationGrades: evaluationGradesData.length,
+        averageGrades: averageGradesData.length,
+        completedCourses: completedCoursesData.length,
+        activeStudents: activeStudentsData.length,
+        coursesByTeacher: coursesByTeacherData.length,
+        globalRanking: globalRankingData.length,
+        awardedBadges: awardedBadgesData?.total_insignias_otorgadas,
+        scheduleControl: scheduleControlData.length,
+        newUserActivity: newUserActivityData.length,
       });
 
       setStudents(studentsData);
       setCourses(coursesData);
       setTeachers(teachersData);
       setGeneralStats(generalStatsData);
+      setAcademicProgress(academicProgressData);
+      setEvaluationGrades(evaluationGradesData);
+      setAverageGrades(averageGradesData);
+      setCompletedCourses(completedCoursesData);
+      setActiveStudents(activeStudentsData);
+      setCoursesByTeacher(coursesByTeacherData);
+      setGlobalRanking(globalRankingData);
+      setAwardedBadges(awardedBadgesData);
+      setScheduleControl(scheduleControlData);
+      setNewUserActivity(newUserActivityData);
 
     } catch (error) {
       console.error('Error loading reports data:', error);
@@ -70,7 +120,7 @@ export default function ReportsAdminPage() {
     }
   };
 
-  const handleShowPreview = async (reportType: 'students' | 'courses' | 'teachers' | 'general') => {
+  const handleShowPreview = async (reportType: 'students' | 'courses' | 'teachers' | 'general' | 'academicProgress' | 'evaluationGrades' | 'averageGrades' | 'completedCourses' | 'activeStudents' | 'coursesByTeacher' | 'globalRanking' | 'awardedBadges' | 'scheduleControl' | 'newUserActivity') => {
     setCurrentReportType(reportType);
     setGeneratingPDF(true);
 
@@ -107,6 +157,76 @@ export default function ReportsAdminPage() {
             courses_count: courses.length, // Ya está en generalStats
             startDate,
             endDate
+          };
+          break;
+        case 'academicProgress':
+          reportData = {
+            academicProgress: academicProgress,
+            ...generalStats,
+            teachers_count: teachers.length
+          };
+          break;
+        case 'evaluationGrades':
+          reportData = {
+            evaluationGrades: evaluationGrades,
+            ...generalStats,
+            teachers_count: teachers.length
+          };
+          break;
+        case 'averageGrades':
+          reportData = {
+            averageGrades: averageGrades,
+            ...generalStats,
+            teachers_count: teachers.length
+          };
+          break;
+        case 'completedCourses':
+          reportData = {
+            completedCourses: completedCourses,
+            ...generalStats,
+            teachers_count: teachers.length
+          };
+          break;
+        case 'activeStudents':
+          reportData = {
+            activeStudents: activeStudents,
+            ...generalStats,
+            teachers_count: teachers.length
+          };
+          break;
+        case 'coursesByTeacher':
+          reportData = {
+            coursesByTeacher: coursesByTeacher,
+            ...generalStats,
+            teachers_count: teachers.length
+          };
+          break;
+        case 'globalRanking':
+          reportData = {
+            globalRanking: globalRanking,
+            ...generalStats,
+            teachers_count: teachers.length
+          };
+          break;
+        case 'awardedBadges':
+          reportData = {
+            ...awardedBadges,
+            ...generalStats,
+            teachers_count: teachers.length
+          };
+          break;
+        case 'scheduleControl':
+          reportData = {
+            scheduleControl: scheduleControl,
+            ...generalStats,
+            teachers_count: teachers.length
+          };
+          break;
+        case 'newUserActivity':
+          reportData = {
+            newUserActivity: newUserActivity,
+            ...generalStats,
+            teachers_count: teachers.length
           };
           break;
       }
@@ -254,6 +374,76 @@ export default function ReportsAdminPage() {
               disabled={generatingPDF}
               color="orange"
             />
+            <ReportButton
+              title="Progreso Académico"
+              description={`${academicProgress.length} registros de progreso`}
+              onGenerate={() => handleShowPreview('academicProgress')}
+              disabled={generatingPDF}
+              color="cyan"
+            />
+            <ReportButton
+              title="Notas de Evaluaciones"
+              description={`${evaluationGrades.length} notas registradas`}
+              onGenerate={() => handleShowPreview('evaluationGrades')}
+              disabled={generatingPDF}
+              color="teal"
+            />
+            <ReportButton
+              title="Promedio de Notas"
+              description={`${averageGrades.length} promedios calculados`}
+              onGenerate={() => handleShowPreview('averageGrades')}
+              disabled={generatingPDF}
+              color="pink"
+            />
+            <ReportButton
+              title="Cursos Completados"
+              description="Finalizaciones y certificaciones"
+              onGenerate={() => handleShowPreview('completedCourses')}
+              disabled={generatingPDF}
+              color="indigo"
+            />
+            <ReportButton
+              title="Estudiantes Activos"
+              description="Por temas completados"
+              onGenerate={() => handleShowPreview('activeStudents')}
+              disabled={generatingPDF}
+              color="yellow"
+            />
+            <ReportButton
+              title="Cursos por Docente"
+              description="Qué cursos dicta cada docente"
+              onGenerate={() => handleShowPreview('coursesByTeacher')}
+              disabled={generatingPDF}
+              color="gray"
+            />
+            <ReportButton
+              title="Ranking de Estudiantes"
+              description="Estudiantes más destacados"
+              onGenerate={() => handleShowPreview('globalRanking')}
+              disabled={generatingPDF}
+              color="red"
+            />
+            <ReportButton
+              title="Insignias Otorgadas"
+              description={`${awardedBadges?.total_insignias_otorgadas || 0} insignias en total`}
+              onGenerate={() => handleShowPreview('awardedBadges')}
+              disabled={generatingPDF}
+              color="lime"
+            />
+            <ReportButton
+              title="Control de Horarios"
+              description="Horarios y sesiones completadas"
+              onGenerate={() => handleShowPreview('scheduleControl')}
+              disabled={generatingPDF}
+              color="stone"
+            />
+            <ReportButton
+              title="Actividad Nuevos Usuarios"
+              description="Actividad de usuarios en el rango"
+              onGenerate={() => handleShowPreview('newUserActivity')}
+              disabled={generatingPDF}
+              color="amber"
+            />
           </div>
         </div>
 
@@ -322,7 +512,17 @@ function ReportButton({
     blue: 'bg-blue-600 hover:bg-blue-700',
     green: 'bg-green-600 hover:bg-green-700',
     purple: 'bg-purple-600 hover:bg-purple-700',
-    orange: 'bg-orange-600 hover:bg-orange-700'
+    orange: 'bg-orange-600 hover:bg-orange-700',
+    cyan: 'bg-cyan-600 hover:bg-cyan-700',
+    teal: 'bg-teal-600 hover:bg-teal-700',
+    pink: 'bg-pink-600 hover:bg-pink-700',
+    indigo: 'bg-indigo-600 hover:bg-indigo-700',
+    yellow: 'bg-yellow-500 hover:bg-yellow-600',
+    gray: 'bg-gray-500 hover:bg-gray-600',
+    red: 'bg-red-600 hover:bg-red-700',
+    lime: 'bg-lime-600 hover:bg-lime-700',
+    stone: 'bg-stone-600 hover:bg-stone-700',
+    amber: 'bg-amber-600 hover:bg-amber-700'
   };
 
   return (

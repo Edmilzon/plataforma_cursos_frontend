@@ -40,6 +40,111 @@ export interface TeacherReportData {
   fecha_registro: string;
 }
 
+export interface AcademicProgressReportData {
+  id_curso: number;
+  curso_titulo: string;
+  id_estudiante: number;
+  estudiante_nombre_completo: string;
+  estado_progreso: 'Completado' | 'En curso' | 'Inscrito' | string;
+  porcentaje_completado: string;
+  fecha_inscripcion: string;
+}
+
+export interface EvaluationGradesReportData {
+  id_usuario: number;
+  estudiante_nombre_completo: string;
+  id_curso: number;
+  curso_titulo: string;
+  id_evaluacion: number;
+  evaluacion_titulo: string;
+  calificacion: string;
+  fecha_entrega: string;
+  estado: string;
+}
+
+export interface AverageGradesReportData {
+  id_curso: number;
+  curso_titulo: string;
+  id_estudiante: number;
+  estudiante_nombre_completo: string;
+  promedio_calificacion: string;
+}
+
+export interface CompletedCoursesReportData {
+  id_curso: number;
+  curso_titulo: string;
+  total_completados: string;
+  total_certificaciones: string;
+}
+
+export interface ActiveStudentsReportData {
+  id_usuario: number;
+  estudiante_nombre_completo: string;
+  avatar_url: string | null;
+  lecciones_completadas: string;
+}
+
+export interface CoursesByTeacherReportData {
+  id_docente: number;
+  nombre_docente: string;
+  total_cursos: string;
+  cursos: {
+    titulo: string;
+    id_curso: number;
+    modalidad: string;
+  }[];
+}
+
+export interface AwardedBadgesReportData {
+  total_insignias_otorgadas: number;
+  detalle_por_estudiante: {
+    id_usuario: number;
+    nombre_completo: string;
+    avatar_url: string | null;
+    insignias_obtenidas: string;
+  }[];
+}
+
+export interface ScheduleControlReportData {
+  id_curso: number;
+  curso_titulo: string;
+  horarios_curso: string | null;
+  estudiantes: {
+    id_estudiante: number;
+    nombre_completo: string;
+    porcentaje_progreso: number;
+    lecciones_completadas: number;
+  }[];
+}
+
+export interface GlobalRankingReportData {
+  id_usuario: number;
+  nombre_completo: string;
+  avatar_url: string | null;
+  puntos: number;
+  certificados_obtenidos: string;
+  lecciones_completadas: string;
+  posicion: string;
+}
+
+export interface NewUserActivityReportData {
+  id_usuario: number;
+  nombre_completo: string;
+  correo: string;
+  fecha_registro: string;
+  saldo_punto: number;
+  cursos_inscritos: {
+    titulo: string;
+    id_curso: number;
+    fecha_inscripcion: string;
+  }[] | null;
+  recompensas_canjeadas: {
+    nombre: string;
+    fecha_canje: string;
+    id_recompensa: number;
+  }[] | null;
+}
+
 export interface GeneralStats {
   total_usuarios: number;
   total_cursos: number;
@@ -196,6 +301,200 @@ export const reportDataService = {
       return [];
     }
   },
+
+  async getAcademicProgressReportData(startDate?: string, endDate?: string): Promise<AcademicProgressReportData[]> {
+    try {
+      // El endpoint base ya está en el courseService, pero para reportes podemos definirlo aquí o usar uno global.
+      // Por ahora, lo haré explícito.
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+      const response = await fetch(`${API_BASE_URL}/cursos/reportes/estado-estudiantes`);
+      if (!response.ok) {
+        throw new Error('Error al obtener el reporte de progreso académico');
+      }
+      let data: AcademicProgressReportData[] = await response.json();
+
+      if (startDate && endDate && Array.isArray(data)) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        data = data.filter(item => {
+          const inscripcion = new Date(item.fecha_inscripcion);
+          return inscripcion >= start && inscripcion <= end;
+        });
+      }
+      return data;
+    } catch (error) {
+      console.error('Error getting academic progress report data:', error);
+      return [];
+    }
+  },
+
+  async getEvaluationGradesReportData(startDate?: string, endDate?: string): Promise<EvaluationGradesReportData[]> {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+      const response = await fetch(`${API_BASE_URL}/entregas/reportes/notas-evaluaciones`);
+      if (!response.ok) {
+        throw new Error('Error al obtener el reporte de notas de evaluaciones');
+      }
+      let data: EvaluationGradesReportData[] = await response.json();
+
+      if (startDate && endDate && Array.isArray(data)) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        data = data.filter(item => {
+          const entrega = new Date(item.fecha_entrega);
+          return entrega >= start && entrega <= end;
+        });
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error getting evaluation grades report data:', error);
+      return [];
+    }
+  },
+
+  async getAverageGradesReportData(startDate?: string, endDate?: string): Promise<AverageGradesReportData[]> {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+      const response = await fetch(`${API_BASE_URL}/cursos/reportes/promedio-notas-estudiantes`);
+      if (!response.ok) {
+        throw new Error('Error al obtener el reporte de promedio de notas');
+      }
+      const data: AverageGradesReportData[] = await response.json();
+      // Nota: Este endpoint no devuelve fechas, por lo que no se aplica el filtro de rango de fechas.
+      // Se devolverán todos los promedios históricos.
+      return data;
+    } catch (error) {
+      console.error('Error getting average grades report data:', error);
+      return [];
+    }
+  },
+
+  async getCompletedCoursesReportData(): Promise<CompletedCoursesReportData[]> {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+      const response = await fetch(`${API_BASE_URL}/cursos/reportes/completados-certificaciones`);
+      if (!response.ok) {
+        throw new Error('Error al obtener el reporte de cursos completados y certificaciones');
+      }
+      const data: CompletedCoursesReportData[] = await response.json();
+      // Este endpoint no parece tener filtro por fecha, así que se devuelven todos los datos.
+      return data;
+    } catch (error) {
+      console.error('Error getting completed courses report data:', error);
+      return [];
+    }
+  },
+
+  async getActiveStudentsReportData(): Promise<ActiveStudentsReportData[]> {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+      const response = await fetch(`${API_BASE_URL}/cursos/reportes/estudiantes-activos`);
+      if (!response.ok) {
+        throw new Error('Error al obtener el reporte de estudiantes activos');
+      }
+      const data: ActiveStudentsReportData[] = await response.json();
+      // Este endpoint no parece tener filtro por fecha, así que se devuelven todos los datos.
+      return data;
+    } catch (error) {
+      console.error('Error getting active students report data:', error);
+      return [];
+    }
+  },
+
+  async getCoursesByTeacherReportData(): Promise<CoursesByTeacherReportData[]> {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+      const response = await fetch(`${API_BASE_URL}/cursos/reportes/cursos-por-docente`);
+      if (!response.ok) {
+        throw new Error('Error al obtener el reporte de cursos por docente');
+      }
+      const data: CoursesByTeacherReportData[] = await response.json();
+      // Este endpoint no parece tener filtro por fecha, así que se devuelven todos los datos.
+      return data;
+    } catch (error) {
+      console.error('Error getting courses by teacher report data:', error);
+      return [];
+    }
+  },
+
+  async getGlobalRankingReportData(): Promise<GlobalRankingReportData[]> {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+      // La URL de la API es /estudiantes-destacados, no está bajo /reportes/
+      const response = await fetch(`${API_BASE_URL}/ranking/estudiantes-destacados`);
+      if (!response.ok) {
+        throw new Error('Error al obtener el ranking global de estudiantes');
+      }
+      const data: GlobalRankingReportData[] = await response.json();
+      // Este endpoint no parece tener filtro por fecha, así que se devuelven todos los datos.
+      return data;
+    } catch (error) {
+      console.error('Error getting global ranking report data:', error);
+      return [];
+    }
+  },
+
+  async getAwardedBadgesReportData(): Promise<AwardedBadgesReportData | null> {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+      const response = await fetch(`${API_BASE_URL}/insignias/reportes/otorgadas`);
+      if (!response.ok) {
+        throw new Error('Error al obtener el reporte de insignias otorgadas');
+      }
+      const data: AwardedBadgesReportData = await response.json();
+      // Este endpoint no parece tener filtro por fecha.
+      return data;
+    } catch (error) {
+      console.error('Error getting awarded badges report data:', error);
+      return null;
+    }
+  },
+
+  async getScheduleControlReportData(): Promise<ScheduleControlReportData[]> {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+      const response = await fetch(`${API_BASE_URL}/cursos/reportes/horarios-sesiones`);
+      if (!response.ok) {
+        throw new Error('Error al obtener el reporte de horarios y sesiones');
+      }
+      const data: ScheduleControlReportData[] = await response.json();
+      // Este endpoint no parece tener filtro por fecha.
+      return data;
+    } catch (error) {
+      console.error('Error getting schedule control report data:', error);
+      return [];
+    }
+  },
+
+  async getNewUserActivityReportData(startDate?: string, endDate?: string): Promise<NewUserActivityReportData[]> {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+      const response = await fetch(`${API_BASE_URL}/user/reportes/actividad-nuevos-usuarios`);
+      if (!response.ok) {
+        throw new Error('Error al obtener el reporte de actividad de nuevos usuarios');
+      }
+      let data: NewUserActivityReportData[] = await response.json();
+
+      if (startDate && endDate && Array.isArray(data)) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        data = data.filter(item => {
+          const registro = new Date(item.fecha_registro);
+          return registro >= start && registro <= end;
+        });
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error getting new user activity report data:', error);
+      return [];
+    }
+  },
+
 
   async getGeneralStats(startDate?: string, endDate?: string): Promise<GeneralStats> {
     try {

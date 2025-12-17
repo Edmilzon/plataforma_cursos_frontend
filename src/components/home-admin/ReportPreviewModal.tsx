@@ -21,7 +21,6 @@ import React from 'react';
 interface PreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  reportType: 'students' | 'courses' | 'teachers' | 'general';
   data: any;
   generatingPDF: boolean;
   onGeneratePDF: () => void;
@@ -49,6 +48,16 @@ export const ReportPreviewModal: React.FC<PreviewModalProps> = ({
             {reportType === 'courses' && 'Reporte de Cursos'}
             {reportType === 'teachers' && 'Reporte de Docentes'}
             {reportType === 'general' && 'Reporte General'}
+            {reportType === 'academicProgress' && 'Reporte de Progreso Académico'}
+            {reportType === 'evaluationGrades' && 'Reporte de Notas de Evaluaciones'}
+            {reportType === 'averageGrades' && 'Reporte de Promedio de Notas'}
+            {reportType === 'completedCourses' && 'Reporte de Cursos Completados'}
+            {reportType === 'activeStudents' && 'Reporte de Estudiantes Activos'}
+            {reportType === 'coursesByTeacher' && 'Reporte de Cursos por Docente'}
+            {reportType === 'globalRanking' && 'Ranking Global de Estudiantes'}
+            {reportType === 'awardedBadges' && 'Reporte de Insignias Otorgadas'}
+            {reportType === 'scheduleControl' && 'Reporte de Control de Horarios'}
+            {reportType === 'newUserActivity' && 'Reporte de Actividad de Nuevos Usuarios'}
           </h2>
           {data?.startDate && data?.endDate && (
             <p className="text-sm text-gray-500 ml-4">
@@ -150,6 +159,16 @@ export const ReportPreviewModal: React.FC<PreviewModalProps> = ({
                   {reportType === 'courses' && 'Lista de Cursos'}
                   {reportType === 'teachers' && 'Lista de Docentes'}
                   {reportType === 'general' && 'Resumen General'}
+                  {reportType === 'academicProgress' && 'Detalle de Progreso Académico'}
+                  {reportType === 'evaluationGrades' && 'Detalle de Notas de Evaluaciones'}
+                  {reportType === 'averageGrades' && 'Promedio de Notas por Estudiante'}
+                  {reportType === 'completedCourses' && 'Cursos Completados y Certificaciones'}
+                  {reportType === 'activeStudents' && 'Estudiantes con Más Temas Completados'}
+                  {reportType === 'coursesByTeacher' && 'Detalle de Cursos por Docente'}
+                  {reportType === 'globalRanking' && 'Ranking de Estudiantes Destacados'}
+                  {reportType === 'awardedBadges' && 'Detalle de Insignias por Estudiante'}
+                  {reportType === 'scheduleControl' && 'Control de Horarios y Sesiones'}
+                  {reportType === 'newUserActivity' && 'Actividad Detallada de Nuevos Usuarios'}
                 </h3>
               </div>
               
@@ -295,6 +314,375 @@ function renderDataTable(reportType: string, data: any) {
             )) : null}
             {(!data?.teachers || data.teachers.length === 0) && (
               <tr><td colSpan={4} className="text-center py-6 text-gray-500">No hay datos de docentes.</td></tr>
+            )}
+          </tbody>
+        </table>
+      );
+
+    case 'academicProgress':
+      return (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-cyan-500">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Estudiante</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Curso</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Estado</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Progreso</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Fecha Inscripción</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data?.academicProgress?.length > 0 ? data.academicProgress.map((item: any, index: number) => (
+              <tr key={`${item.id_estudiante}-${item.id_curso}-${index}`}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="font-medium text-gray-900">{item.estudiante_nombre_completo}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {item.curso_titulo}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    item.estado_progreso === 'Completado' ? 'bg-green-100 text-green-800' :
+                    item.estado_progreso === 'En curso' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-blue-100 text-blue-800'
+                  }`}>
+                    {item.estado_progreso}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{parseFloat(item.porcentaje_completado).toFixed(2)}%</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(item.fecha_inscripcion).toLocaleDateString('es-ES')}</td>
+              </tr>
+            )) : null}
+            {(!data?.academicProgress || data.academicProgress.length === 0) && (
+              <tr><td colSpan={5} className="text-center py-6 text-gray-500">No hay datos de progreso académico.</td></tr>
+            )}
+          </tbody>
+        </table>
+      );
+
+    case 'evaluationGrades':
+      return (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-teal-500">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Estudiante</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Curso</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Evaluación</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Calificación</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Fecha Entrega</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data?.evaluationGrades?.length > 0 ? data.evaluationGrades.map((item: any, index: number) => (
+              <tr key={`${item.id_usuario}-${item.id_evaluacion}-${index}`}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="font-medium text-gray-900">{item.estudiante_nombre_completo}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {item.curso_titulo}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {item.evaluacion_titulo}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">{parseFloat(item.calificacion).toFixed(2)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(item.fecha_entrega).toLocaleDateString('es-ES')}</td>
+              </tr>
+            )) : null}
+            {(!data?.evaluationGrades || data.evaluationGrades.length === 0) && (
+              <tr><td colSpan={5} className="text-center py-6 text-gray-500">No hay datos de notas de evaluaciones.</td></tr>
+            )}
+          </tbody>
+        </table>
+      );
+
+    case 'averageGrades':
+      return (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-pink-500">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Estudiante</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Curso</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Promedio Final</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data?.averageGrades?.length > 0 ? data.averageGrades.map((item: any, index: number) => (
+              <tr key={`${item.id_estudiante}-${item.id_curso}-${index}`}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="font-medium text-gray-900">{item.estudiante_nombre_completo}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {item.curso_titulo}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">{parseFloat(item.promedio_calificacion).toFixed(2)}</td>
+              </tr>
+            )) : null}
+            {(!data?.averageGrades || data.averageGrades.length === 0) && (
+              <tr><td colSpan={3} className="text-center py-6 text-gray-500">No hay datos de promedios de notas.</td></tr>
+            )}
+          </tbody>
+        </table>
+      );
+
+    case 'completedCourses':
+      return (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-indigo-500">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Curso</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Total Completados</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Certificaciones Obtenidas</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data?.completedCourses?.length > 0 ? data.completedCourses.map((item: any) => (
+              <tr key={item.id_curso}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="font-medium text-gray-900">{item.curso_titulo}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-gray-800">
+                  {item.total_completados}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-gray-800">{item.total_certificaciones}</td>
+              </tr>
+            )) : null}
+            {(!data?.completedCourses || data.completedCourses.length === 0) && (
+              <tr><td colSpan={3} className="text-center py-6 text-gray-500">No hay datos de cursos completados.</td></tr>
+            )}
+          </tbody>
+        </table>
+      );
+
+    case 'activeStudents':
+      return (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-yellow-500">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Estudiante</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Lecciones Completadas</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data?.activeStudents?.length > 0 ? data.activeStudents.map((item: any) => (
+              <tr key={item.id_usuario}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10">
+                      <img className="h-10 w-10 rounded-full" src={item.avatar_url || '/default-avatar.png'} alt="" />
+                    </div>
+                    <div className="ml-4">
+                      <div className="font-medium text-gray-900">{item.estudiante_nombre_completo}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-gray-800">{item.lecciones_completadas}</td>
+              </tr>
+            )) : null}
+            {(!data?.activeStudents || data.activeStudents.length === 0) && (
+              <tr><td colSpan={2} className="text-center py-6 text-gray-500">No hay datos de estudiantes activos.</td></tr>
+            )}
+          </tbody>
+        </table>
+      );
+
+    case 'coursesByTeacher':
+      return (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-500">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Docente</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Cursos Asignados ({data?.coursesByTeacher?.reduce((acc: number, item: any) => acc + (item.cursos?.length || 0), 0) || 0})</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data?.coursesByTeacher?.length > 0 ? data.coursesByTeacher.map((item: any) => (
+              <tr key={item.id_docente}>
+                <td className="px-6 py-4 whitespace-nowrap align-top">
+                  <div className="font-bold text-gray-900">{item.nombre_docente}</div>
+                  <div className="text-sm text-gray-600">{item.total_cursos} cursos</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <ul className="list-disc list-inside space-y-1">
+                    {item.cursos?.map((curso: any, index: number) => (
+                      <li key={`${curso.id_curso}-${index}`} className="text-sm text-gray-800">
+                        {curso.titulo} <span className="text-xs text-gray-500">({curso.modalidad})</span>
+                      </li>
+                    ))}
+                  </ul>
+                </td>
+              </tr>
+            )) : null}
+            {(!data?.coursesByTeacher || data.coursesByTeacher.length === 0) && (
+              <tr><td colSpan={2} className="text-center py-6 text-gray-500">No hay datos de cursos por docente.</td></tr>
+            )}
+          </tbody>
+        </table>
+      );
+
+    case 'globalRanking':
+      return (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-red-500">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Posición</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Estudiante</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Puntos</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Lecciones</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Certificados</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data?.globalRanking?.length > 0 ? data.globalRanking.map((item: any) => (
+              <tr key={item.posicion}>
+                <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <span className="text-lg font-bold text-gray-700">{item.posicion}</span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10">
+                      <img className="h-10 w-10 rounded-full" src={item.avatar_url || '/default-avatar.png'} alt="" />
+                    </div>
+                    <div className="ml-4">
+                      <div className="font-medium text-gray-900">{item.nombre_completo}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">{item.puntos}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{item.lecciones_completadas}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{item.certificados_obtenidos}</td>
+              </tr>
+            )) : null}
+            {(!data?.globalRanking || data.globalRanking.length === 0) && (
+              <tr><td colSpan={5} className="text-center py-6 text-gray-500">No hay datos de ranking de estudiantes.</td></tr>
+            )}
+          </tbody>
+        </table>
+      );
+
+    case 'awardedBadges':
+      return (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-lime-500">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Estudiante</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Insignias Obtenidas</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data?.detalle_por_estudiante?.length > 0 ? data.detalle_por_estudiante.map((item: any) => (
+              <tr key={item.id_usuario}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10">
+                      <img className="h-10 w-10 rounded-full" src={item.avatar_url || '/default-avatar.png'} alt="" />
+                    </div>
+                    <div className="ml-4">
+                      <div className="font-medium text-gray-900">{item.nombre_completo}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                  <span className="text-lg font-bold text-gray-800">{item.insignias_obtenidas}</span>
+                </td>
+              </tr>
+            )) : null}
+            {(!data?.detalle_por_estudiante || data.detalle_por_estudiante.length === 0) && (
+              <tr><td colSpan={2} className="text-center py-6 text-gray-500">No hay datos de insignias otorgadas.</td></tr>
+            )}
+          </tbody>
+        </table>
+      );
+
+    case 'scheduleControl':
+      return (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-stone-500">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Curso y Horario</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Estudiantes y Progreso</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data?.scheduleControl?.length > 0 ? data.scheduleControl.map((item: any) => (
+              <tr key={item.id_curso}>
+                <td className="px-6 py-4 whitespace-nowrap align-top">
+                  <div className="font-bold text-gray-900">{item.curso_titulo}</div>
+                  <div className="text-sm text-gray-600">{item.horarios_curso || 'Sin horario definido'}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {item.estudiantes?.length > 0 ? (
+                    <ul className="space-y-2">
+                      {item.estudiantes.map((est: any) => (
+                        <li key={est.id_estudiante} className="text-sm text-gray-800">
+                          <div className="font-medium">{est.nombre_completo}</div>
+                          <div className="text-xs text-gray-500">
+                            Progreso: {est.porcentaje_progreso}% | Sesiones: {est.lecciones_completadas}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-sm text-gray-500">Sin estudiantes inscritos.</div>
+                  )}
+                </td>
+              </tr>
+            )) : null}
+            {(!data?.scheduleControl || data.scheduleControl.length === 0) && (
+              <tr><td colSpan={2} className="text-center py-6 text-gray-500">No hay datos de control de horarios.</td></tr>
+            )}
+          </tbody>
+        </table>
+      );
+
+    case 'newUserActivity':
+      return (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-amber-500">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Usuario</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Cursos Inscritos</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Recompensas Canjeadas</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data?.newUserActivity?.length > 0 ? data.newUserActivity.map((item: any) => (
+              <tr key={item.id_usuario}>
+                <td className="px-6 py-4 whitespace-nowrap align-top">
+                  <div className="font-bold text-gray-900">{item.nombre_completo}</div>
+                  <div className="text-sm text-gray-600">{item.correo}</div>
+                  <div className="text-sm text-gray-500 mt-1">Puntos: {item.saldo_punto}</div>
+                  <div className="text-xs text-gray-400 mt-1">Registro: {new Date(item.fecha_registro).toLocaleDateString('es-ES')}</div>
+                </td>
+                <td className="px-6 py-4 align-top">
+                  {item.cursos_inscritos?.length > 0 ? (
+                    <ul className="list-disc list-inside space-y-1">
+                      {item.cursos_inscritos.map((curso: any) => (
+                        <li key={curso.id_curso} className="text-sm text-gray-800">
+                          {curso.titulo}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="text-sm text-gray-400">Ninguno</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 align-top">
+                  {item.recompensas_canjeadas?.length > 0 ? (
+                    <ul className="list-disc list-inside space-y-1">
+                      {item.recompensas_canjeadas.map((rec: any) => (
+                        <li key={rec.id_recompensa} className="text-sm text-gray-800">
+                          {rec.nombre}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="text-sm text-gray-400">Ninguna</span>
+                  )}
+                </td>
+              </tr>
+            )) : null}
+            {(!data?.newUserActivity || data.newUserActivity.length === 0) && (
+              <tr><td colSpan={3} className="text-center py-6 text-gray-500">No hay datos de actividad de nuevos usuarios.</td></tr>
             )}
           </tbody>
         </table>
