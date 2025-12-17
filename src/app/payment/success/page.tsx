@@ -13,14 +13,14 @@ interface CourseResponse {
   modalidad: string;
   imagen_portada_url: string;
   docente: {
-    id_usuario: number;
+    userId: number;
     nombre: string;
     apellido: string;
   };
 }
 
 interface UserResponse {
-  id_usuario: number;
+  userId: number;
   nombre: string;
   apellido: string;
   correo: string;
@@ -42,6 +42,9 @@ interface EnrollmentResponse {
 interface ReceiptData {
   transactionId: string; // Vendrá de id_inscripcion
   date: string;          // Vendrá de fecha_inscripcion
+  amountOriginal: number; // AGREGADO: Para el precio original
+  amountPaid: number;     // AGREGADO: Para el precio final
+  discountAmount: number; // AGREGADO: Para el monto de descuento
   amount: number;
   currency: string;
   courseId: number;
@@ -65,14 +68,20 @@ function PaymentSuccessContent() {
   const courseIdParam = searchParams.get("courseId");
   const userIdParam = searchParams.get("userId");
 
+  const finalPriceParam = searchParams.get("finalPrice");
+  const discountAmountParam = searchParams.get("discountAmount");
+
   useEffect(() => {
     const fetchData = async () => {
       // 1. Validación de parámetros
-      if (!courseIdParam || !userIdParam) {
-        setError("Faltan identificadores de la transacción (courseId o userId).");
+      if (!courseIdParam || !userIdParam || !finalPriceParam || !discountAmountParam) {
+        setError("Faltan identificadores de la transacción (courseId, userId, finalPrice o discountAmount).");
         setLoading(false);
         return;
       }
+
+      const amountPaid = parseFloat(finalPriceParam);
+      const discountAmount = parseFloat(discountAmountParam);
 
       try {
         setLoading(true);
@@ -120,6 +129,9 @@ function PaymentSuccessContent() {
         const newReceipt: ReceiptData = {
           transactionId: currentEnrollment.id_inscripcion.toString(), // ID Real de la BD
           date: formattedDate, // Fecha Real de la BD
+          amountOriginal: Number(courseData.precio), // El precio cargado de la API
+          amountPaid: Number(finalPriceParam),                     // El precio final pagado (de la URL)
+          discountAmount: discountAmount,             // El monto del descuento (de la URL)
           amount: Number(courseData.precio),
           currency: "USD",
           courseId: courseData.id_curso,
@@ -241,36 +253,51 @@ function PaymentSuccessContent() {
             </div>
           </div>
 
-          {/* Detalles de la Compra */}
-          <div className="border rounded-xl border-gray-200 overflow-hidden mb-10 print:border-gray-300">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 border-b border-gray-200 print:bg-gray-100">
-                <tr>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Descripción</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Importe</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                <tr>
-                  <td className="px-6 py-4">
-                    <p className="font-semibold text-gray-900">{receipt.courseName}</p>
-                    <p className="text-sm text-gray-500">Acceso completo al contenido del curso</p>
-                  </td>
-                  <td className="px-6 py-4 text-right font-medium text-gray-900">
-                    {receipt.amount.toFixed(2)} {receipt.currency}
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot className="bg-gray-50 print:bg-gray-100">
-                <tr>
-                  <td className="px-6 py-4 font-bold text-gray-900 text-right">Total</td>
-                  <td className="px-6 py-4 font-bold text-gray-900 text-right text-xl text-blue-600 print:text-black">
-                    {receipt.amount.toFixed(2)} {receipt.currency}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+          {/* Detalles de la Compra (MODIFICADO) */}
+            <div className="border rounded-xl border-gray-200 overflow-hidden mb-10 print:border-gray-300">
+                <table className="w-full text-left">
+                    <thead className="bg-gray-50 border-b border-gray-200 print:bg-gray-100">
+                        <tr>
+                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Descripción</th>
+                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                        {/* Fila del Curso (Precio Original) */}
+                        <tr>
+                            <td className="px-6 py-4">
+                                <p className="font-semibold text-gray-900">{receipt.courseName}</p>
+                                <p className="text-sm text-gray-500">Precio Base del Curso</p>
+                            </td>
+                            <td className="px-6 py-4 text-right font-medium text-gray-900">
+                                {receipt.amountOriginal.toFixed(2)} {receipt.currency}
+                            </td>
+                        </tr>
+
+                        {/* Fila del Descuento (Si aplica) */}
+                        {receipt.discountAmount > 0 && (
+                            <tr className="bg-red-50/50">
+                                <td className="px-6 py-4">
+                                    <p className="font-semibold text-red-600">Descuento Aplicado</p>
+                                    <p className="text-sm text-gray-500">Cupón o Recompensa Canjeada</p>
+                                </td>
+                                <td className="px-6 py-4 text-right font-bold text-red-600">
+                                    - {receipt.discountAmount.toFixed(2)} {receipt.currency}
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                    <tfoot className="bg-gray-50 print:bg-gray-100 border-t border-gray-200">
+                        {/* Fila del Total */}
+                        <tr>
+                            <td className="px-6 py-4 font-bold text-gray-900 text-right">Total Pagado</td>
+                            <td className="px-6 py-4 font-bold text-gray-900 text-right text-xl text-blue-600 print:text-black">
+                                {receipt.amountPaid.toFixed(2)} {receipt.currency}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
 
           {/* Detalles Adicionales */}
           <div className="grid grid-cols-2 gap-4 text-sm text-gray-500 mb-10">

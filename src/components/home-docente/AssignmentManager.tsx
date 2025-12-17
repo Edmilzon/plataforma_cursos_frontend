@@ -23,6 +23,9 @@ export default function AssignmentManager({ lessonId, onBack }: AssignmentManage
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [isFinalTask, setIsFinalTask] = useState(false);
+  const [description, setDescription] = useState('');
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
   const [formData, setFormData] = useState({
@@ -57,14 +60,19 @@ export default function AssignmentManager({ lessonId, onBack }: AssignmentManage
     setError(null);
     if (assignment) {
       setEditingAssignment(assignment);
+      // Detectar si es tarea final y limpiar la descripción visual
+      const isFinal = assignment.descripcion.includes('[FINAL]');
+      setIsFinalTask(isFinal);
+      
       setFormData({
         titulo: assignment.titulo,
-        descripcion: assignment.descripcion,
+        descripcion: assignment.descripcion.replace('[FINAL]', '').trim(),
         url_contenido: assignment.url_contenido || '',
         fecha_entrega: new Date(assignment.fecha_entrega).toISOString().split('T')[0],
       });
     } else {
       setEditingAssignment(null);
+      setIsFinalTask(false); // Resetear el checkbox
       setFormData({
         titulo: '',
         descripcion: '',
@@ -78,11 +86,26 @@ export default function AssignmentManager({ lessonId, onBack }: AssignmentManage
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // 1. Preparamos la descripción real agregando la marca si el checkbox está activo
+    let finalDescriptionPayload = formData.descripcion.trim();
+    if (isFinalTask) {
+      finalDescriptionPayload += ' [FINAL]';
+    }
+
+    // 2. Creamos el objeto final a enviar (payload)
+    const payload = {
+      ...formData,
+      descripcion: finalDescriptionPayload
+    };
+
     try {
       if (editingAssignment) {
-        await courseService.updateAssignment(String(editingAssignment.id_tarea), formData);
+        // Usamos 'payload' en lugar de 'formData'
+        await courseService.updateAssignment(String(editingAssignment.id_tarea), payload);
       } else {
-        await courseService.createAssignment(lessonId, formData);
+        // Usamos 'payload' en lugar de 'formData'
+        await courseService.createAssignment(lessonId, payload);
       }
       setIsFormOpen(false);
       loadAssignments();
@@ -173,6 +196,20 @@ export default function AssignmentManager({ lessonId, onBack }: AssignmentManage
             </div>
           </div>
 
+          <div className="flex items-center gap-2 mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+            <input
+              type="checkbox"
+              id="finalTaskCheck"
+              checked={isFinalTask}
+              onChange={(e) => setIsFinalTask(e.target.checked)}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="finalTaskCheck" className="font-medium text-gray-700 cursor-pointer select-none">
+              Tarea final del curso.
+            </label>
+          </div>
+
+          <div className="flex justify-end space-x-2"></div>
           <div className="flex justify-end space-x-2">
             <button
               type="button"

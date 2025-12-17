@@ -71,24 +71,42 @@ export default function CourseList({ courses, onCourseUpdate }: CourseListProps)
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {courses.map((course) => (
-          <div key={course.id_curso} className="bg-white rounded-lg shadow-md p-6 border border-gray-200 flex flex-col justify-between">
-            <div>
+          <div key={course.id_curso} className="bg-white rounded-lg shadow-md p-6 border border-gray-200 flex flex-col">
+            <div className="flex-grow">
               <h3 className="text-xl font-bold text-gray-900 mb-2">{course.titulo}</h3>
               <p className="text-gray-600 mb-4 line-clamp-3">{course.descripcion}</p>
             </div>
-            <div className="flex justify-end items-center space-x-2 mt-4">
-              <Link 
-                href={`/home-docente/cursos/${course.id_curso}`} 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
-              >
-                Gestionar
-              </Link>
-              <button onClick={() => openEditModal(course)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
-                Actualizar
-              </button>
-              <button onClick={() => openDeleteModal(course)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
-                Eliminar
-              </button>
+            
+            <div className="flex flex-col space-y-2 mt-4 pt-4 border-t border-gray-100">
+              <div className="flex justify-between space-x-2">
+                <Link 
+                  href={`/home-docente/cursos/${course.id_curso}`} 
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors flex-1 text-center"
+                >
+                  Gestionar
+                </Link>
+                <Link
+                  href={`/home-docente/cursos/${course.id_curso}/calificar`}
+                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors flex-1 text-center"
+                >
+                  Calificar
+                </Link>
+              </div>
+              
+              <div className="flex justify-between space-x-2">
+                <button 
+                  onClick={() => openEditModal(course)} 
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors flex-1"
+                >
+                  Editar
+                </button>
+                <button 
+                  onClick={() => openDeleteModal(course)} 
+                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors flex-1"
+                >
+                  Eliminar
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -118,11 +136,11 @@ export default function CourseList({ courses, onCourseUpdate }: CourseListProps)
                 <input type="text" value={formData.modalidad} onChange={(e) => setFormData({...formData, modalidad: e.target.value})} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-gray-900" />
               </div>
               <div className="flex justify-end space-x-4 mt-6">
-                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300">
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-3 py-1.5 text-gray-700 bg-gray-200 rounded hover:bg-gray-300 text-sm">
                   Cancelar
                 </button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                  Guardar Cambios
+                <button type="submit" className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                  Guardar
                 </button>
               </div>
             </form>
@@ -138,10 +156,10 @@ export default function CourseList({ courses, onCourseUpdate }: CourseListProps)
             <p className="text-gray-700">¿Estás seguro de que quieres eliminar el curso "{selectedCourse.titulo}"? Esta acción no se puede deshacer.</p>
             {error && <p className="text-red-500 mt-4">{error}</p>}
             <div className="flex justify-end space-x-4 mt-6">
-              <button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300">
+              <button onClick={() => setIsDeleteModalOpen(false)} className="px-3 py-1.5 text-gray-700 bg-gray-200 rounded hover:bg-gray-300 text-sm">
                 Cancelar
               </button>
-              <button onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+              <button onClick={handleDelete} className="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 text-sm">
                 Eliminar
               </button>
             </div>

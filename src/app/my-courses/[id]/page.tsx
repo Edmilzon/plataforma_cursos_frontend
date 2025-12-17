@@ -5,7 +5,10 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { courseService } from '@/services/courseService';
 import { enrollmentService } from '@/services/enrollmentService';
+<<<<<<< HEAD
 import { deliveryService } from '@/services/deliveryService';
+=======
+>>>>>>> origin/modal-descuento
 import { BottomNavbar } from '@/components/BottomNavbar';
 
 interface Module {
@@ -122,9 +125,15 @@ export default function MyCourseDetailPage() {
 
                     return {
                       ...lesson,
+<<<<<<< HEAD
                       completado: progressData.completado || false,
                       tareas: assignmentsWithDeliveries || [],
                       evaluaciones: evaluationsWithDeliveries || []
+=======
+                      completado: false, // Por ahora siempre false, luego se actualiza con lógica real
+                      tareas: assignments || [],
+                      evaluaciones: evaluations || []
+>>>>>>> origin/modal-descuento
                     };
                   } catch (error) {
                     console.error('Error loading lesson content:', error);
@@ -163,12 +172,46 @@ export default function MyCourseDetailPage() {
     fetchCourseData();
   }, [courseId]);
 
+<<<<<<< HEAD
   const handleMarkCompleted = async (lessonId: number) => {
     try {
       // 1. Llamar a la API para persistir el cambio
       await deliveryService.markLessonAsCompleted(lessonId);
 
       // 2. Actualizar el estado local para reflejar el cambio inmediatamente
+=======
+  // --- LÓGICA DEL CERTIFICADO ---
+  // Esta función verifica si el estudiante cumple con TODO para habilitar el botón
+  const checkCertificateEligibility = () => {
+    // 1. Verificar progreso numérico (Debe ser 100%)
+    if (progress < 100) return false;
+
+    // 2. Verificar si hay Tareas marcadas como [FINAL] y si están entregadas
+    const hasPendingFinalTask = modules.some(m => 
+      m.lecciones?.some(l => 
+        l.tareas?.some(t => t.descripcion.includes('[FINAL]') && !t.entrega)
+      )
+    );
+    if (hasPendingFinalTask) return false;
+
+    // 3. Verificar si hay Evaluaciones marcadas como [FINAL] y si están entregadas
+    const hasPendingFinalEval = modules.some(m => 
+      m.lecciones?.some(l => 
+        l.evaluaciones?.some(e => e.descripcion.includes('[FINAL]') && !e.entrega)
+      )
+    );
+    if (hasPendingFinalEval) return false;
+
+    // Si pasa todas las validaciones, es apto
+    return true;
+  };
+  
+  const isCertificateEligible = checkCertificateEligibility();
+  // -----------------------------
+
+  const handleMarkCompleted = async (lessonId: string) => {
+    try {
+>>>>>>> origin/modal-descuento
       setModules(prev => prev.map(module => ({
         ...module,
         lecciones: module.lecciones?.map(lesson => 
@@ -178,6 +221,17 @@ export default function MyCourseDetailPage() {
         )
       })));
 
+<<<<<<< HEAD
+=======
+      const totalLessons = modules.reduce((acc, module) => acc + (module.lecciones?.length || 0), 0);
+      const completedLessons = modules.reduce((acc, module) => 
+        acc + (module.lecciones?.filter(lesson => lesson.completado).length || 0), 0
+      ) + 1;
+      
+      const newProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+      setProgress(newProgress);
+
+>>>>>>> origin/modal-descuento
     } catch (error) {
       console.error('Error:', error);
       alert('Error al marcar la lección como completada');
@@ -198,9 +252,36 @@ export default function MyCourseDetailPage() {
       return;
     }
 
+<<<<<<< HEAD
     setSelectedAssignment({ assignment, module, lesson });
     setDeliveryUrl('');
   };
+=======
+    try {
+      const fileUrl = await simulateFileUpload(selectedFile);
+      
+      setModules(prevModules => 
+        prevModules.map(module => ({
+          ...module,
+          lecciones: module.lecciones?.map(lesson => ({
+            ...lesson,
+            tareas: lesson.tareas?.map(tarea => {
+              if (tarea.id_tarea === parseInt(assignmentId)) {
+                return {
+                  ...tarea,
+                  entrega: {
+                    estado: 'Entregado',
+                    fecha_entrega: new Date().toISOString(),
+                    url_archivo: fileUrl
+                  }
+                };
+              }
+              return tarea;
+            })
+          }))
+        }))
+      );
+>>>>>>> origin/modal-descuento
 
   const openEvaluationModal = (evaluation: Evaluation, module: Module, lesson: Lesson) => {
     const now = new Date();
@@ -305,18 +386,51 @@ export default function MyCourseDetailPage() {
     }
   };
 
+<<<<<<< HEAD
   const updateProgress = () => {
     let totalActivities = 0;
     let deliveredActivities = 0;
+=======
+  const handleDeliverEvaluation = async (evaluationId: string) => {
+    try {
+      setModules(prevModules => 
+        prevModules.map(module => ({
+          ...module,
+          lecciones: module.lecciones?.map(lesson => ({
+            ...lesson,
+            evaluaciones: lesson.evaluaciones?.map(evaluacion => {
+              if (evaluacion.id_evaluacion === parseInt(evaluationId)) {
+                return {
+                  ...evaluacion,
+                  entrega: {
+                    estado: 'Entregado',
+                    fecha_entrega: new Date().toISOString()
+                  }
+                };
+              }
+              return evaluacion;
+            })
+          }))
+        }))
+      );
+>>>>>>> origin/modal-descuento
 
     modules.forEach(module => {
       module.lecciones?.forEach(lesson => {
         totalActivities += lesson.tareas?.length || 0;
         deliveredActivities += lesson.tareas?.filter(t => t.entrega).length || 0;
 
+<<<<<<< HEAD
         totalActivities += lesson.evaluaciones?.length || 0;
         deliveredActivities += lesson.evaluaciones?.filter(e => e.entrega).length || 0;
       });
+=======
+  const simulateFileUpload = async (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(`https://example.com/uploads/${file.name}`);
+      }, 1000);
+>>>>>>> origin/modal-descuento
     });
 
     const newProgress = totalActivities > 0 ? Math.round((deliveredActivities / totalActivities) * 100) : 0;
@@ -370,6 +484,16 @@ export default function MyCourseDetailPage() {
             <div>
               <h1 className="text-3xl font-bold">{course?.titulo}</h1>
               <p className="text-gray-600 mt-2">{course?.descripcion}</p>
+              {course?.horario_clases && (
+                <div className="flex items-center gap-2 mt-4 bg-blue-50 p-3 rounded-lg border border-blue-100 inline-block">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-blue-800 font-medium text-sm">
+                    Horario: {course.horario_clases}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-blue-600">{progress}%</div>
@@ -387,6 +511,7 @@ export default function MyCourseDetailPage() {
             </div>
           </div>
 
+<<<<<<< HEAD
           {/* Pestañas */}
           <div className="mt-6 border-b">
             <nav className="flex space-x-8">
@@ -409,6 +534,39 @@ export default function MyCourseDetailPage() {
               ))}
             </nav>
           </div>
+=======
+          {/* BOTÓN DE CERTIFICADO (AQUÍ ESTÁ LA LÓGICA VISUAL) */}
+          <div className="mt-8 pt-4 border-t border-gray-100 flex flex-col items-center justify-center">
+            <button
+              onClick={() => router.push(`../certificates/${courseId}`)}
+              disabled={!isCertificateEligible}
+              className={`
+                flex items-center gap-2 px-8 py-3 rounded-lg font-bold shadow-sm transition-all transform duration-200
+                ${isCertificateEligible 
+                  ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white hover:shadow-lg hover:-translate-y-1 cursor-pointer' 
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-70'}
+              `}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {isCertificateEligible ? 'Descargar Certificado de Finalización' : 'Certificado Bloqueado'}
+            </button>
+            
+            {!isCertificateEligible && (
+               <div className="mt-3 text-center">
+                  <p className="text-xs text-gray-500">
+                    * Para desbloquear el certificado debes completar el <strong>100% del contenido</strong>
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    y entregar todas las actividades finales (Tareas o Evaluaciones).
+                  </p>
+               </div>
+            )}
+          </div>
+          {/* FIN BOTÓN DE CERTIFICADO */}
+
+>>>>>>> origin/modal-descuento
         </div>
 
         {/* Contenido según pestaña activa */}
@@ -452,6 +610,7 @@ export default function MyCourseDetailPage() {
                           )}
                         </div>
 
+<<<<<<< HEAD
                         {!lesson.completado && (
                           <button // @ts-ignore
                             onClick={() => handleMarkCompleted(lesson.id_leccion.toString())}
@@ -459,6 +618,153 @@ export default function MyCourseDetailPage() {
                           >
                             Marcar como completado
                           </button>
+=======
+                        {/* Tareas */}
+                        {lesson.tareas && lesson.tareas.length > 0 && (
+                          <div className="mt-4 ml-9">
+                            <h4 className="font-semibold text-gray-700 mb-3">Tareas:</h4>
+                            <div className="space-y-4">
+                              {lesson.tareas.map(tarea => (
+                                <div key={tarea.id_tarea} className="bg-gray-50 p-4 rounded-lg border">
+                                  <div className="flex justify-between items-start mb-3">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <h5 className="font-medium text-lg">{tarea.titulo}</h5>
+                                        {tarea.descripcion.includes('[FINAL]') && (
+                                           <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded border border-yellow-200 font-bold">
+                                              TAREA FINAL
+                                           </span>
+                                        )}
+                                      </div>
+                                      
+                                      {/* Limpiamos la etiqueta [FINAL] para que no se vea feo en la descripción */}
+                                      <p className="text-gray-600 mt-1">{tarea.descripcion.replace('[FINAL]', '')}</p>
+                                      <p className="text-sm text-gray-500 mt-2">
+                                        📅 Entrega: {new Date(tarea.fecha_entrega).toLocaleDateString()}
+                                      </p>
+                                      {tarea.url_contenido && (
+                                        <a 
+                                          href={tarea.url_contenido} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="text-blue-600 text-sm mt-2 inline-block hover:underline"
+                                        >
+                                          📎 Ver material de la tarea
+                                        </a>
+                                      )}
+                                    </div>
+                                    <div className="ml-4">
+                                      {tarea.entrega ? (
+                                        <div className="text-center">
+                                          <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                                            ✅ Entregado
+                                          </span>
+                                          <p className="text-xs text-gray-500 mt-1">
+                                            {new Date(tarea.entrega.fecha_entrega).toLocaleDateString()}
+                                          </p>
+                                          {tarea.entrega.calificacion && (
+                                            <p className="text-xs font-medium mt-1">
+                                              Calificación: {tarea.entrega.calificacion}
+                                            </p>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="text-center">
+                                          <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+                                            📤 Pendiente
+                                          </span>
+                                          <div className="mt-2">
+                                            <input
+                                              type="file"
+                                              onChange={handleFileSelect}
+                                              className="text-sm mb-2"
+                                            />
+                                            <button 
+                                              onClick={() => handleDeliverAssignment(tarea.id_tarea.toString())}
+                                              className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 w-full"
+                                            >
+                                              Entregar
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Evaluaciones */}
+                        {lesson.evaluaciones && lesson.evaluaciones.length > 0 && (
+                          <div className="mt-6 ml-9">
+                            <h4 className="font-semibold text-gray-700 mb-3">Evaluaciones:</h4>
+                            <div className="space-y-4">
+                              {lesson.evaluaciones.map(evaluacion => (
+                                <div key={evaluacion.id_evaluacion} className="bg-gray-50 p-4 rounded-lg border">
+                                  <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <h5 className="font-medium text-lg">{evaluacion.titulo}</h5>
+                                        {evaluacion.descripcion.includes('[FINAL]') && (
+                                           <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded border border-purple-200 font-bold">
+                                              EVALUACIÓN FINAL
+                                           </span>
+                                        )}
+                                      </div>
+                                      
+                                      <p className="text-gray-600 mt-1">{evaluacion.descripcion.replace('[FINAL]', '')}</p>
+                                      <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
+                                        <div>
+                                          <span className="font-medium">Tipo:</span> {evaluacion.tipo}
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Puntos máx:</span> {evaluacion.calificacion_maxima}
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Inicia:</span> {new Date(evaluacion.fecha_hora_inicio).toLocaleString()}
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Finaliza:</span> {new Date(evaluacion.fecha_hora_entrega).toLocaleString()}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="ml-4">
+                                      {evaluacion.entrega ? (
+                                        <div className="text-center">
+                                          <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                                            ✅ Entregado
+                                          </span>
+                                          <p className="text-xs text-gray-500 mt-1">
+                                            {new Date(evaluacion.entrega.fecha_entrega).toLocaleDateString()}
+                                          </p>
+                                          {evaluacion.entrega.calificacion && (
+                                            <p className="text-xs font-medium mt-1">
+                                              Calificación: {evaluacion.entrega.calificacion}
+                                            </p>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="text-center">
+                                          <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                                            📝 Pendiente
+                                          </span>
+                                          <button 
+                                            onClick={() => handleDeliverEvaluation(evaluacion.id_evaluacion.toString())}
+                                            className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 mt-2 w-full"
+                                          >
+                                            Realizar
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+>>>>>>> origin/modal-descuento
                         )}
                       </div>
                     </div>

@@ -16,6 +16,7 @@ export default function HomeDocente() {
   const fetchMyCourses = async () => {
     setLoading(true);
     try {
+      if (!user) return;
       const allCourses = await courseService.getAllCourses();
       // Filtramos los cursos para mostrar solo los del docente actual
       const filteredCourses = allCourses.filter(course => course.docente?.id_usuario === user.id_usuario);
