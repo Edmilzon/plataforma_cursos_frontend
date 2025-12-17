@@ -38,6 +38,7 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
     calificacion_maxima: 100,
   });
 
+  const [esTrabajoFinal, setEsTrabajoFinal] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [evaluationToDelete, setEvaluationToDelete] = useState<Evaluation | null>(null);
 
@@ -61,8 +62,11 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
 
   const handleOpenForm = (evaluation: Evaluation | null = null) => {
     setError(null);
+    const MARCA_FINAL = ''; // Marca técnica
+
     if (evaluation) {
       setEditingEvaluation(evaluation);
+<<<<<<< HEAD
       // Lógica para detectar si es evaluación final
       const isFinal = evaluation.descripcion.includes('[FINAL]');
       setIsFinalEvaluation(isFinal);
@@ -70,6 +74,21 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
       setFormData({
         titulo: evaluation.titulo,
         descripcion: evaluation.descripcion.replace('[FINAL]', '').trim(), // Limpiamos la etiqueta visualmente
+=======
+      
+      // Detección de marca
+      const isFinal = evaluation.descripcion.includes(MARCA_FINAL);
+      setEsTrabajoFinal(isFinal);
+
+      // Limpieza de descripción para el formulario
+      const cleanDescription = isFinal 
+        ? evaluation.descripcion.replace(MARCA_FINAL, '').trim() 
+        : evaluation.descripcion;
+
+      setFormData({
+        titulo: evaluation.titulo,
+        descripcion: cleanDescription,
+>>>>>>> origin/recompensa-y-pago-curso
         tipo: evaluation.tipo,
         fecha_hora_inicio: new Date(evaluation.fecha_hora_inicio).toISOString().substring(0, 16),
         fecha_hora_entrega: new Date(evaluation.fecha_hora_entrega).toISOString().substring(0, 16),
@@ -77,7 +96,11 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
       });
     } else {
       setEditingEvaluation(null);
+<<<<<<< HEAD
       setIsFinalEvaluation(false); // Resetear checkbox
+=======
+      setEsTrabajoFinal(false); // Resetear checkbox
+>>>>>>> origin/recompensa-y-pago-curso
       setFormData({
         titulo: '',
         descripcion: '',
@@ -94,6 +117,7 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
     e.preventDefault();
     setError(null);
     try {
+<<<<<<< HEAD
       // 1. Preparamos la descripción con la marca [FINAL] si corresponde
       let finalDescriptionPayload = formData.descripcion.trim();
       if (isFinalEvaluation) {
@@ -102,11 +126,15 @@ export default function EvaluationManager({ lessonId, onBack }: EvaluationManage
 
       // 2. Preparamos el payload (objeto a enviar)
       // La API espera 'YYYY-MM-DD HH:mm:ss', convertimos desde 'YYYY-MM-DDTHH:mm'
+=======
+      // 1. Preparar payload con formato de fecha correcto Y el booleano es_trabajo_final
+>>>>>>> origin/recompensa-y-pago-curso
       const payload = {
         ...formData,
         descripcion: finalDescriptionPayload,
         fecha_hora_inicio: `${formData.fecha_hora_inicio.replace('T', ' ')}:00`,
         fecha_hora_entrega: `${formData.fecha_hora_entrega.replace('T', ' ')}:00`,
+        es_trabajo_final: esTrabajoFinal 
       };
 
       if (editingEvaluation) {

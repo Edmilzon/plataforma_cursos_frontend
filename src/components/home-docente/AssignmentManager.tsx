@@ -35,6 +35,8 @@ export default function AssignmentManager({ lessonId, onBack }: AssignmentManage
     fecha_entrega: '',
   });
 
+  const [esTrabajoFinal, setEsTrabajoFinal] = useState(false);
+
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [assignmentToDelete, setAssignmentToDelete] = useState<Assignment | null>(null);
 
@@ -56,10 +58,14 @@ export default function AssignmentManager({ lessonId, onBack }: AssignmentManage
     }
   };
 
-  const handleOpenForm = (assignment: Assignment | null = null) => {
+const handleOpenForm = (assignment: Assignment | null = null) => {
     setError(null);
+    // Definimos la marca técnica que usamos en el backend
+    const MARCA_FINAL = ''; 
+
     if (assignment) {
       setEditingAssignment(assignment);
+<<<<<<< HEAD
       // Detectar si es tarea final y limpiar la descripción visual
       const isFinal = assignment.descripcion.includes('[FINAL]');
       setIsFinalTask(isFinal);
@@ -67,12 +73,31 @@ export default function AssignmentManager({ lessonId, onBack }: AssignmentManage
       setFormData({
         titulo: assignment.titulo,
         descripcion: assignment.descripcion.replace('[FINAL]', '').trim(),
+=======
+      
+      // 1. Detectar si la descripción tiene la marca oculta
+      const isFinal = assignment.descripcion.includes(MARCA_FINAL);
+      setEsTrabajoFinal(isFinal); // Actualizamos el estado del checkbox
+
+      // 2. Limpiar la descripción para mostrarla limpia en el formulario
+      const cleanDescription = isFinal 
+        ? assignment.descripcion.replace(MARCA_FINAL, '').trim() 
+        : assignment.descripcion;
+
+      setFormData({
+        titulo: assignment.titulo,
+        descripcion: cleanDescription, // Usamos la descripción limpia
+>>>>>>> origin/recompensa-y-pago-curso
         url_contenido: assignment.url_contenido || '',
         fecha_entrega: new Date(assignment.fecha_entrega).toISOString().split('T')[0],
       });
     } else {
       setEditingAssignment(null);
+<<<<<<< HEAD
       setIsFinalTask(false); // Resetear el checkbox
+=======
+      setEsTrabajoFinal(false); // Reseteamos el checkbox para nuevas tareas
+>>>>>>> origin/recompensa-y-pago-curso
       setFormData({
         titulo: '',
         descripcion: '',
@@ -87,6 +112,7 @@ export default function AssignmentManager({ lessonId, onBack }: AssignmentManage
     e.preventDefault();
     setError(null);
 
+<<<<<<< HEAD
     // 1. Preparamos la descripción real agregando la marca si el checkbox está activo
     let finalDescriptionPayload = formData.descripcion.trim();
     if (isFinalTask) {
@@ -97,15 +123,29 @@ export default function AssignmentManager({ lessonId, onBack }: AssignmentManage
     const payload = {
       ...formData,
       descripcion: finalDescriptionPayload
+=======
+    // Fusionamos los datos del formulario con el valor del checkbox
+    const datosAEnviar = {
+      ...formData,
+      es_trabajo_final: esTrabajoFinal
+>>>>>>> origin/recompensa-y-pago-curso
     };
 
     try {
       if (editingAssignment) {
+<<<<<<< HEAD
         // Usamos 'payload' en lugar de 'formData'
         await courseService.updateAssignment(String(editingAssignment.id_tarea), payload);
       } else {
         // Usamos 'payload' en lugar de 'formData'
         await courseService.createAssignment(lessonId, payload);
+=======
+        // Enviamos 'datosAEnviar' en lugar de 'formData'
+        await courseService.updateAssignment(String(editingAssignment.id_tarea), datosAEnviar);
+      } else {
+        // Enviamos 'datosAEnviar' en lugar de 'formData'
+        await courseService.createAssignment(lessonId, datosAEnviar);
+>>>>>>> origin/recompensa-y-pago-curso
       }
       setIsFormOpen(false);
       loadAssignments();
@@ -172,7 +212,7 @@ export default function AssignmentManager({ lessonId, onBack }: AssignmentManage
               required
             />
           </div>
-
+            
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">URL Contenido (opcional)</label>
@@ -196,6 +236,7 @@ export default function AssignmentManager({ lessonId, onBack }: AssignmentManage
             </div>
           </div>
 
+<<<<<<< HEAD
           <div className="flex items-center gap-2 mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
             <input
               type="checkbox"
@@ -210,6 +251,21 @@ export default function AssignmentManager({ lessonId, onBack }: AssignmentManage
           </div>
 
           <div className="flex justify-end space-x-2"></div>
+=======
+          <div className="flex items-center gap-2 mt-4 mb-4 p-3 bg-blue-50 border border-blue-100 rounded-md">
+            <input 
+              type="checkbox" 
+              id="checkFinal" 
+              checked={esTrabajoFinal}
+              onChange={(e) => setEsTrabajoFinal(e.target.checked)}
+              className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="checkFinal" className="text-sm font-semibold text-gray-700 cursor-pointer">
+              ¿Es este el Trabajo Final? <span className="font-normal text-gray-500">(Genera certificado al aprobar)</span>
+            </label>
+          </div>
+
+>>>>>>> origin/recompensa-y-pago-curso
           <div className="flex justify-end space-x-2">
             <button
               type="button"
