@@ -40,7 +40,7 @@ export function Navbar() {
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
               <div className="relative">
-                <button
+                <button 
                   className="text-gray-700 font-medium flex items-center space-x-2"
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                 >

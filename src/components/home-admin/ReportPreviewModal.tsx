@@ -25,8 +25,6 @@ interface PreviewModalProps {
   data: any;
   generatingPDF: boolean;
   onGeneratePDF: () => void;
-  startDate?: string;
-  endDate?: string;
 }
 
 export const ReportPreviewModal: React.FC<PreviewModalProps> = ({
@@ -36,8 +34,6 @@ export const ReportPreviewModal: React.FC<PreviewModalProps> = ({
   data,
   generatingPDF,
   onGeneratePDF,
-  startDate,
-  endDate,
 }) => {
   if (!isOpen) return null;
 
@@ -54,16 +50,15 @@ export const ReportPreviewModal: React.FC<PreviewModalProps> = ({
             {reportType === 'teachers' && 'Reporte de Docentes'}
             {reportType === 'general' && 'Reporte General'}
           </h2>
-          {startDate && endDate && (
+          {data?.startDate && data?.endDate && (
             <p className="text-sm text-gray-500 ml-4">
-              {`Desde: ${new Date(startDate).toLocaleDateString('es-ES')} - Hasta: ${new Date(endDate).toLocaleDateString('es-ES')}`}
+              {`Desde: ${new Date(data.startDate).toLocaleDateString('es-ES')} - Hasta: ${new Date(data.endDate).toLocaleDateString('es-ES')}`}
             </p>
           )}
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl"
           >
-            ×
           </button>
         </div>
 
@@ -201,7 +196,7 @@ function renderDataTable(reportType: string, data: any) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {data.students?.length > 0 ? data.students.map((student: any) => (
+            {data?.students?.length > 0 ? data.students.map((student: any) => (
               <tr key={student.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="font-medium text-gray-900">
@@ -220,7 +215,7 @@ function renderDataTable(reportType: string, data: any) {
                 </td>
               </tr>
             )) : null}
-            {(!data.students || data.students.length === 0) && (
+            {(!data?.students || data.students.length === 0) && (
               <tr><td colSpan={4} className="text-center py-6 text-gray-500">No hay datos de estudiantes.</td></tr>
             )}
           </tbody>
@@ -240,7 +235,7 @@ function renderDataTable(reportType: string, data: any) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {data.courses?.length > 0 ? data.courses.map((course: any) => (
+            {data?.courses?.length > 0 ? data.courses.map((course: any) => (
               <tr key={course.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="font-medium text-gray-900">{course.titulo}</div>
@@ -260,7 +255,7 @@ function renderDataTable(reportType: string, data: any) {
                 </td>
               </tr>
             )) : null}
-            {(!data.courses || data.courses.length === 0) && (
+            {(!data?.courses || data.courses.length === 0) && (
               <tr><td colSpan={5} className="text-center py-6 text-gray-500">No hay datos de cursos.</td></tr>
             )}
           </tbody>
@@ -279,7 +274,7 @@ function renderDataTable(reportType: string, data: any) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {data.teachers?.length > 0 ? data.teachers.map((teacher: any) => (
+            {data?.teachers?.length > 0 ? data.teachers.map((teacher: any) => (
               <tr key={teacher.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="font-medium text-gray-900">
@@ -298,7 +293,7 @@ function renderDataTable(reportType: string, data: any) {
                 </td>
               </tr>
             )) : null}
-            {(!data.teachers || data.teachers.length === 0) && (
+            {(!data?.teachers || data.teachers.length === 0) && (
               <tr><td colSpan={4} className="text-center py-6 text-gray-500">No hay datos de docentes.</td></tr>
             )}
           </tbody>

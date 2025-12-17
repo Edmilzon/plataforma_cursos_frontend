@@ -113,8 +113,9 @@ export const reportDataService = {
           edad: student.edad || 0,
           fecha_registro: student.fecha_registro || new Date().toISOString(),
           saldo_punto: studentRank?.saldo_punto || student.saldo_punto || 0,
-          cursos_inscritos: Math.floor(Math.random() * 10) + 1, // Temporal
-          progreso_promedio: Math.floor(Math.random() * 100) // Temporal
+          // TODO: Reemplazar con datos reales del servicio de inscripciones
+          cursos_inscritos: studentRank?.cursos_inscritos || 0, 
+          progreso_promedio: studentRank?.progreso_promedio || 0
         };
       });
     } catch (error) {
@@ -155,7 +156,8 @@ export const reportDataService = {
           precio: course.precio || 0,
           modalidad: course.modalidad || 'Online',
           fecha_inicio: course.fecha_inicio,
-          calificacion_promedio: parseFloat((Math.random() * 2 + 3).toFixed(1)) // Temporal 3-5 stars
+          // TODO: Reemplazar con datos reales del servicio de calificaciones
+          calificacion_promedio: course.calificacion_promedio || 0
         };
       });
     } catch (error) {
@@ -184,8 +186,9 @@ export const reportDataService = {
         nombre: teacher.nombre,
         apellido: teacher.apellido,
         correo: teacher.correo,
-        cursos_count: Math.floor(Math.random() * 5) + 1, // Temporal
-        estudiantes_totales: Math.floor(Math.random() * 100) + 10, // Temporal
+        // TODO: Reemplazar con datos reales del servicio de cursos/docentes
+        cursos_count: teacher.cursos_asignados || 0,
+        estudiantes_totales: teacher.total_estudiantes_en_cursos || 0,
         fecha_registro: teacher.fecha_registro || new Date().toISOString()
       }));
     } catch (error) {
