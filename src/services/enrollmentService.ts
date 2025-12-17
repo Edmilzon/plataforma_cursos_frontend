@@ -141,12 +141,6 @@ export const enrollmentService = {
     return response.json();
   },
 
-<<<<<<< HEAD
-=======
-  /**
-   * Obtiene cursos populares con información de inscripciones
-   */
->>>>>>> origin/modal-descuento
   async getCoursesWithEnrollments(): Promise<any[]> {
     try {
       console.log('🔍 Obteniendo cursos populares...');
@@ -166,82 +160,5 @@ export const enrollmentService = {
       console.error('Error getting popular courses:', error);
       return [];
     }
-<<<<<<< HEAD
-=======
-  },
-
-  /**
-   * Obtiene el progreso de un usuario en un curso específico
-   */
-  async getCourseProgress(courseId: string): Promise<number> {
-    try {
-      const userData = localStorage.getItem('user');
-      if (!userData) return 0;
-
-      const user = JSON.parse(userData);
-      const userId = user.id_usuario;
-      if (!userId) return 0;
-
-      const myCourses = await this.getMyCourses();
-      const course = myCourses.find((c: any) => c.id_curso === parseInt(courseId));
-      
-      return course ? course.progreso : 0;
-    } catch (error) {
-      console.error('Error getting course progress:', error);
-      return 0;
-    }
-  },
-
-  /**
-   * Obtiene información detallada de una inscripción específica
-   */
-  async getInscripcionDetails(inscripcionId: string): Promise<any> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/inscripciones/${inscripcionId}`);
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-      
-      return response.json();
-    } catch (error) {
-      console.error('Error getting inscripcion details:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Obtiene los datos del usuario actual
-   */
-  getCurrentUser(): any {
-    try {
-      const userData = localStorage.getItem('user');
-      if (!userData) return null;
-      
-      return JSON.parse(userData);
-    } catch (error) {
-      console.error('Error getting current user:', error);
-      return null;
-    }
-  },
-
-  /**
-   * Calcula el precio con descuento
-   */
-  calculatePriceWithDiscount(originalPrice: number, discountPercentage: number): number {
-    if (discountPercentage <= 0) return originalPrice;
-    
-    const discountAmount = originalPrice * (discountPercentage / 100);
-    const finalPrice = originalPrice - discountAmount;
-    
-    // Asegurarse de que el precio no sea negativo
-    return Math.max(0, finalPrice);
-  },
-
-  /**
-   * Formatea un precio para mostrar
-   */
-  formatPrice(price: number): string {
-    return `$${price.toFixed(2)}`;
->>>>>>> origin/modal-descuento
   }
 };

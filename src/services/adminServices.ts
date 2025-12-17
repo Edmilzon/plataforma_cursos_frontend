@@ -436,7 +436,6 @@ export const adminService = {
   // ==================== HELPERS ====================
 
   async getRoleIdByName(roleName: string): Promise<number> {
-<<<<<<< HEAD
     const roles = await this.getRoles();
     const role = roles.find(r => r.nombre.toLowerCase() === roleName.toLowerCase());
     if (!role) throw new Error(`Rol "${roleName}" no encontrado`);
@@ -457,20 +456,10 @@ export const adminService = {
       return rewards;
     } catch (error) {
       console.error('❌ Error obteniendo recompensas:', error);
-=======
-    try {
-      const roles = await this.getRoles();
-      const role = roles.find(r => r.nombre.toLowerCase() === roleName.toLowerCase());
-      if (!role) throw new Error(`Rol "${roleName}" no encontrado`);
-      return role.id_rol;
-    } catch (error) {
-      console.error('❌ Error obteniendo ID del rol:', error);
->>>>>>> origin/feature/perfil-insignias-permisos
       throw error;
     }
   },
 
-<<<<<<< HEAD
   async createReward(rewardData: Omit<Reward, 'id_recompensa'>): Promise<Reward> {
     try {
       console.log('📝 Creando recompensa:', rewardData);
@@ -537,30 +526,5 @@ export const adminService = {
       console.error('❌ Error eliminando recompensa:', error);
       throw error;
     }
-=======
-  // ==================== VALIDACIÓN ====================
-
-  validatePassword(password: string): { isValid: boolean; message?: string } {
-    if (password.length < 6) {
-      return { 
-        isValid: false, 
-        message: 'La contraseña debe tener al menos 6 caracteres' 
-      };
-    }
-    
-    return { isValid: true };
-  },
-
-  validateEmail(email: string): { isValid: boolean; message?: string } {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return { 
-        isValid: false, 
-        message: 'El correo electrónico no es válido' 
-      };
-    }
-    
-    return { isValid: true };
->>>>>>> origin/feature/perfil-insignias-permisos
   }
 };
