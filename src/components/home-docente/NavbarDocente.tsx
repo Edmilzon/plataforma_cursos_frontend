@@ -9,6 +9,7 @@ const IconPlusCircle = () => <svg xmlns="http://www.w3.org/2000/svg" className="
 const navItems = [
     { href: '/home-docente', label: 'Mis Cursos', icon: <IconBookOpen /> },
     { href: '/home-docente/crear-curso', label: 'Crear Curso', icon: <IconPlusCircle /> },
+    { href: '/home-docente/calificar-ev-tar', label: 'Calificar', icon: <IconPlusCircle /> },
 ];
 
 export default function NavbarDocente() {

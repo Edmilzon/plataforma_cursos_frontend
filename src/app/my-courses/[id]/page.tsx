@@ -77,65 +77,43 @@ export default function MyCourseDetailPage() {
           return;
         }
 
-        const [courseData, modulesData, myCourses] = await Promise.all([
+        // 1. Obtener datos principales en paralelo
+        const [courseData, modulesData, allDeliveries] = await Promise.all([
           courseService.getCourseById(courseId),
           courseService.getModulesByCourse(courseId),
-          enrollmentService.getMyCourses(),
+          deliveryService.getAllUserDeliveriesForCourse(courseId),
         ]);
         
         setCourse(courseData);
-        
-        const courseProgress = myCourses.find((course: any) => 
-          course.id_curso === parseInt(courseId)
-        );
-        setProgress(courseProgress?.progreso || 0);
 
+        // 2. Construir la estructura completa del curso con todo el contenido
         const modulesWithContent = await Promise.all(
           modulesData.map(async (module: Module) => {
             try {
               const lessons = await courseService.getLessonsByModule(courseId, module.id_modulo.toString());
               
+              // 3. Para cada lección, obtener sus tareas, evaluaciones y progreso
               const lessonsWithContent = await Promise.all(
                 lessons.map(async (lesson: Lesson) => {
                   try {
                     const [assignments, evaluations] = await Promise.all([
                       courseService.getAssignmentsByLesson(lesson.id_leccion.toString()),
-                      courseService.getEvaluationsByLesson(lesson.id_leccion.toString())
+                      courseService.getEvaluationsByLesson(lesson.id_leccion.toString()),
                     ]);
 
-                    // Obtener entregas para cada tarea
+                    // 4. Asignar entregas a cada tarea usando la lista que ya obtuvimos
                     const assignmentsWithDeliveries = await Promise.all(
                       assignments.map(async (assignment: Assignment) => {
-                        try {
-                          const delivery = await deliveryService.getAssignmentDelivery(
-                            assignment.id_tarea.toString()
-                          );
-                          return {
-                            ...assignment,
-                            entrega: delivery || null
-                          };
-                        } catch (error) {
-                          console.error('Error loading assignment delivery:', error);
-                          return assignment;
-                        }
+                        const delivery = allDeliveries.find(d => d.tipo_actividad === 'Tarea' && parseInt(d.id_actividad) === assignment.id_tarea);
+                        return { ...assignment, entrega: delivery || null };
                       })
                     );
 
-                    // Obtener entregas para cada evaluación
+                    // 5. Asignar entregas a cada evaluación
                     const evaluationsWithDeliveries = await Promise.all(
                       evaluations.map(async (evaluation: Evaluation) => {
-                        try {
-                          const delivery = await deliveryService.getEvaluationDelivery(
-                            evaluation.id_evaluacion.toString()
-                          );
-                          return {
-                            ...evaluation,
-                            entrega: delivery || null
-                          };
-                        } catch (error) {
-                          console.error('Error loading evaluation delivery:', error);
-                          return evaluation;
-                        }
+                        const delivery = allDeliveries.find(d => d.tipo_actividad === 'Evaluacion' && parseInt(d.id_actividad) === evaluation.id_evaluacion);
+                        return { ...evaluation, entrega: delivery || null };
                       })
                     );
 
@@ -185,24 +163,31 @@ export default function MyCourseDetailPage() {
     fetchCourseData();
   }, [courseId]);
 
-  const handleMarkCompleted = async (lessonId: string) => {
+  const handleMarkCompleted = async (lessonId: number) => {
     try {
+      // 1. Llamar a la API para persistir el cambio
+      await deliveryService.markLessonAsCompleted(lessonId);
+
+      // 2. Actualizar el estado local para reflejar el cambio inmediatamente
       setModules(prev => prev.map(module => ({
         ...module,
         lecciones: module.lecciones?.map(lesson => 
-          lesson.id_leccion === parseInt(lessonId) 
+          lesson.id_leccion === lessonId 
             ? { ...lesson, completado: true }
             : lesson
         )
       })));
-
-      updateProgress();
 
     } catch (error) {
       console.error('Error:', error);
       alert('Error al marcar la lección como completada');
     }
   };
+
+  // El progreso se recalcula cada vez que el estado de los módulos cambia
+  useEffect(() => {
+    updateProgress();
+  }, [modules]);
 
   const openAssignmentModal = (assignment: Assignment, module: Module, lesson: Lesson) => {
     const now = new Date();
@@ -321,26 +306,20 @@ export default function MyCourseDetailPage() {
   };
 
   const updateProgress = () => {
-    const totalLessons = modules.reduce((acc, module) => acc + (module.lecciones?.length || 0), 0);
-    const completedLessons = modules.reduce((acc, module) => 
-      acc + (module.lecciones?.filter(lesson => lesson.completado).length || 0), 0);
-    
-    const totalAssignments = modules.reduce((acc, module) => 
-      acc + (module.lecciones?.reduce((lessonAcc, lesson) => lessonAcc + (lesson.tareas?.length || 0), 0) || 0), 0);
-    const completedAssignments = modules.reduce((acc, module) => 
-      acc + (module.lecciones?.reduce((lessonAcc, lesson) => 
-        lessonAcc + (lesson.tareas?.filter(tarea => tarea.entrega).length || 0), 0) || 0), 0);
-    
-    const totalEvaluations = modules.reduce((acc, module) => 
-      acc + (module.lecciones?.reduce((lessonAcc, lesson) => lessonAcc + (lesson.evaluaciones?.length || 0), 0) || 0), 0);
-    const completedEvaluations = modules.reduce((acc, module) => 
-      acc + (module.lecciones?.reduce((lessonAcc, lesson) => 
-        lessonAcc + (lesson.evaluaciones?.filter(evaluacion => evaluacion.entrega).length || 0), 0) || 0), 0);
+    let totalActivities = 0;
+    let deliveredActivities = 0;
 
-    const totalItems = totalLessons + totalAssignments + totalEvaluations;
-    const completedItems = completedLessons + completedAssignments + completedEvaluations;
+    modules.forEach(module => {
+      module.lecciones?.forEach(lesson => {
+        totalActivities += lesson.tareas?.length || 0;
+        deliveredActivities += lesson.tareas?.filter(t => t.entrega).length || 0;
 
-    const newProgress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+        totalActivities += lesson.evaluaciones?.length || 0;
+        deliveredActivities += lesson.evaluaciones?.filter(e => e.entrega).length || 0;
+      });
+    });
+
+    const newProgress = totalActivities > 0 ? Math.round((deliveredActivities / totalActivities) * 100) : 0;
     setProgress(newProgress);
   };
 
@@ -474,7 +453,7 @@ export default function MyCourseDetailPage() {
                         </div>
 
                         {!lesson.completado && (
-                          <button
+                          <button // @ts-ignore
                             onClick={() => handleMarkCompleted(lesson.id_leccion.toString())}
                             className="ml-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 whitespace-nowrap transition-colors"
                           >

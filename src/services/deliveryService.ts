@@ -161,6 +161,54 @@ export const deliveryService = {
     }
   },
 
+  // Marcar una lección como completada
+  async markLessonAsCompleted(lessonId: number): Promise<{ success: boolean }> {
+    const userId = getCurrentUserId();
+    if (!userId) {
+      throw new Error('Usuario no autenticado.');
+    }
+
+    // Asumiendo un endpoint como /progreso/leccion
+    const response = await fetch(`${API_BASE_URL}/progreso/leccion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_usuario: userId,
+        id_leccion: lessonId,
+        completado: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Error al marcar la lección como completada');
+    }
+    return { success: true };
+  },
+
+  // Obtener todas las entregas de un usuario para un curso específico
+  async getAllUserDeliveriesForCourse(courseId: string): Promise<any[]> {
+    const userId = getCurrentUserId();
+    if (!userId) {
+      console.warn('No se pudo obtener el ID de usuario para buscar entregas.');
+      return [];
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/entregas/usuario/${userId}/curso/${courseId}`);
+      if (response.status === 404) {
+        return []; // No hay entregas, es un caso normal.
+      }
+      if (!response.ok) {
+        throw new Error(`Error al obtener las entregas del usuario para el curso ${courseId}`);
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Error en getAllUserDeliveriesForCourse:', error);
+      return [];
+    }
+  },
+
   // Obtener progreso de lección
   async getLessonProgress(id_leccion: number) {
     try {
